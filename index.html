@@ -1294,7 +1294,7 @@
     if (state.foe.hp <= 0){
       state.foe.hp = 0;
       log(`${t.name} を倒した。`, "victory");
-      onVictory(t);
+      onVictory(t, tot);
       renderArena();
       renderStats();
       return;
@@ -1348,7 +1348,7 @@
     saveGame();
   }
 
-  function onVictory(enemy){
+    function onVictory(enemy, battleTotals){
     const p = state.player;
     const base = enemy.xp;
     const diff = enemy.lv - p.lv;
@@ -1375,12 +1375,13 @@
       renderSlots();
     }
 
-   // 勝利時はHPを全快
-    const { tot } = computeTotalForCurrent();
-    p._max = tot.hp;
+    // 勝利時はHPを全快
+    const usedTot = battleTotals || computeTotalForCurrent().tot;
+    p._max = usedTot.hp;
     p.hp = p._max;
     p.phoenixUsed = false;
-
+    log("戦いを終え、HPは全快した。", "heal");
+		
     saveGame();
   }
 
