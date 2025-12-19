@@ -1734,13 +1734,22 @@
     white: "#ffffff",
   };
 
-	  // 勇者画像（左側）の読み込み
+  // 勇者画像（左側）の読み込み
   const HERO_IMG_SRC = "character_oji_03_blue_brown.png";
   const heroImg = new Image();
   let heroImgReady = false;
   heroImg.onload = () => { heroImgReady = true; };
   heroImg.onerror = () => { heroImgReady = false; };
   heroImg.src = HERO_IMG_SRC;
+
+  // 敵画像（右側）の読み込み
+  const FOE_IMG_SRC = "character_monster_gargoyle_purple.png";
+  const foeImg = new Image();
+  let foeImgReady = false;
+  foeImg.onload = () => { foeImgReady = true; };
+  foeImg.onerror = () => { foeImgReady = false; };
+  foeImg.src = FOE_IMG_SRC;
+
 
   // 16x16の簡易スプライト（0:透明, 1:主色, 2:影, 3:目など）
   const SPR_HERO = [
@@ -1932,7 +1941,26 @@
     } else {
       drawSprite(SPR_HERO, heroX, heroY, 5, false, PAL.hero, PAL.hero2, PAL.white);
     }
-    drawSprite(SPR_FOE, foeX, foeY, 5, true, PAL.foe, PAL.foe2, PAL.white);
+       if (heroImgReady && heroImg.width && heroImg.height){
+      const targetH = 80;
+      const scale = targetH / heroImg.height;
+      const targetW = heroImg.width * scale;
+      ctx.drawImage(heroImg, heroX, heroY, targetW, targetH);
+    } else {
+      drawSprite(SPR_HERO, heroX, heroY, 5, false, PAL.hero, PAL.hero2, PAL.white);
+    }
+    if (foeImgReady && foeImg.width && foeImg.height){
+      const targetH = 80;
+      const scale = targetH / foeImg.height;
+      const targetW = foeImg.width * scale;
+      ctx.save();
+      ctx.translate(foeX, foeY);
+      ctx.scale(-1, 1);
+      ctx.drawImage(foeImg, -targetW, 0, targetW, targetH);
+      ctx.restore();
+    } else {
+      drawSprite(SPR_FOE, foeX, foeY, 5, true, PAL.foe, PAL.foe2, PAL.white);
+    }
 
     // 聖痕: 手元に小さな印
     if (syn.tagMap.has("stigma")){
