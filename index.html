@@ -386,6 +386,8 @@
     frost:  { name:"氷核(2)", desc:"凍結確率+。被ダメ-3%。", mods:{ freezeChance:0.08, drPct:0.03 }, score: 7 },
     blaze:  { name:"灼熱核(2)", desc:"ファイア追撃確率+。", mods:{ fireProcChance:0.10 }, score: 6 },
     eclipse:{ name:"蝕(2)", desc:"先制ダメ+、回避+4%。", mods:{ backstab:0.10, dodgeBonus:4 }, score: 6 },
+    arcane:{ name:"秘儀の書(2)", desc:"MAG+2、星弾+。", statBonus:{ mag:2 }, mods:{ arcaneProcChance:0.08 }, score: 6 },
+    metal: { name:"鍛造の構え(2)", desc:"DEF+2、貫通+1、被ダメ-2%。", statBonus:{ def:2 }, mods:{ armorPen:1, drPct:0.02 }, score: 7 },
 
     // 祈り系
     prayer: { name:"祈りの連鎖(2)", desc:"祈り(回復)の効果+25%。聖撃(小)。", mods:{ healBoost:0.25, holySmiteChance:0.08 }, score: 8 },
@@ -413,6 +415,10 @@
     { id:"holy_metal", name:"聖堂鋼", tags:["holy","metal"], each:1, desc:"聖撃+、DEF+2。", statBonus:{ def:2 }, mods:{ holySmiteChance:0.10 }, score: 10 },
     { id:"shadow_moon", name:"宵闇の月", tags:["shadow","moon"], each:1, desc:"回避+10%、SPD+1。", statBonus:{ spd:1 }, mods:{ dodgeBonus:10 }, score: 10 },
     { id:"earth_metal", name:"城塞", tags:["earth","metal"], each:1, desc:"DEF+3、被ダメ-6%。", statBonus:{ def:3 }, mods:{ drPct:0.06 }, score: 11 },
+    { id:"star_tech", name:"星機連携", tags:["star","tech"], each:1, desc:"星弾+、防御貫通+2。", mods:{ arcaneProcChance:0.10, armorPen:2 }, score: 12 },
+    { id:"angel_star", name:"星翼の祝福", tags:["angel","star"], each:1, desc:"加護+、星落とし確率(小)。", mods:{ angelGuard:0.08, starfallChance:0.16 }, score: 13 },
+    { id:"dragon_fire", name:"灼炎竜陣", tags:["dragon","fire"], each:1, desc:"攻撃回数+1(小)、被ダメ-5%。", mods:{ extraSwings:1, drPct:0.05 }, score: 13 },
+    { id:"tech_light", name:"光機ハーモニー", tags:["tech","light"], each:1, desc:"防御貫通+2、聖撃+。", mods:{ armorPen:2, holySmiteChance:0.10 }, score: 11 },
 
     // 祈り系
     { id:"stigma_prayer", name:"聖痕の祈り", tags:["stigma","prayer"], each:1, desc:"回復量+30%、聖撃+。", mods:{ healBoost:0.30, holySmiteChance:0.14 }, score: 14 },
@@ -438,6 +444,8 @@
     // 聖痕・天使コンボ
     { id:"stigmata_vow", name:"聖痕の誓約", requires:["h11","a10","b11","s15"], desc:"祈りが強化。聖撃+。被ダメ-8%。", mods:{ healBoost:0.40, holySmiteChance:0.22, drPct:0.08 }, score: 34 },
     { id:"angelic_liturgy", name:"天使礼式", requires:["h12","a11","b12","s16"], desc:"復活付与。加護が強化。聖撃が強化。", mods:{ phoenix:true, angelGuard:0.22, holySmiteChance:0.24, lifesteal:0.06 }, score: 36 },
+    { id:"astral_engine", name:"星機エンジン", requires:["h14","a13","b15","s18"], desc:"星弾+、ATK+4、SPD+2。", statBonus:{ atk:4, spd:2 }, mods:{ arcaneProcChance:0.22, starfallChance:0.16 }, score: 30 },
+    { id:"seraph_fleet", name:"熾天艦隊", requires:["h15","a11","b14","s16"], desc:"復活付与、加護強化、被ダメ-12%。", mods:{ phoenix:true, angelGuard:0.18, drPct:0.12, healBoost:0.20 }, score: 34 },
   ];
 
   // ---- アイテム ----
@@ -462,6 +470,10 @@
 		      I("h13","流星の額当て","head","epic",["star","swift","arcane"],{spd:2, mag:4, crt:2}, 30),
       I("h9","星詠みのティアラ","head","legend",["star","light","arcane"],{mag:5, crt:2, def:1}, 36),
       I("h10","大聖堂の光輪","head","legend",["holy","light","vigor"],{mag:3, crt:3, def:3, hp:6}, 42),
+      I("h14","星導のゴーグル","head","epic",["star","tech","focus"],{mag:3, crt:2, spd:1}, 40),
+      I("h15","熾天の冠","head","legend",["angel","holy","light","focus"],{mag:4, crt:3, def:2, hp:4}, 46),
+      I("h16","蒼月のサークレット","head","epic",["moon","ice","focus"],{mag:4, spd:2, crt:1}, 40),
+      I("h17","竜王の冑","head","legend",["dragon","fire","guard"],{def:6, hp:12, atk:3}, 48),
 
       // 祈り系
       I("h11","聖痕のヴェール","head","epic",["stigma","holy","prayer","cloth"],{mag:4, def:1, crt:2, hp:3}, 28),
@@ -478,6 +490,9 @@
       I("a8","機巧の装甲服","armor","rare",["tech","metal","pierce"],{def:4, spd:1, crt:2}, RARITY_MIN_LV.rare+4),
       I("a9","熾天使の胸甲","armor","legend",["holy","light","metal","guard"],{def:5, hp:12, mag:2, crt:1}, 48),
       I("a12","護光の外衣","armor","epic",["angel","cloth","holy","vigor"],{def:3, hp:10, mag:2}, 34),
+      I("a13","熔星の鎧","armor","epic",["star","fire","metal","blaze"],{def:5, hp:10, atk:2}, 42),
+      I("a14","星辰の礼装","armor","epic",["star","light","vigor","cloth"],{mag:5, hp:8, spd:1, crt:1}, 44),
+      I("a15","聖翼の大鎧","armor","legend",["angel","holy","metal","guard"],{def:7, hp:14, mag:2, crt:1}, 52),
 
       // 祈り系
       I("a10","聖痕の法衣","armor","epic",["stigma","holy","prayer","cloth","vigor"],{def:4, mag:4, hp:6}, 30),
@@ -495,6 +510,9 @@
       I("b9","星道のブーツ","boots","legend",["star","light","swift","arcane"],{spd:3, mag:2, crt:1}, 38),
       I("b13","機動サーキット","boots","epic",["tech","swift","pierce"],{spd:5, atk:1, crt:1}, 28),
       I("b10","巡礼の羽靴","boots","legend",["holy","light","vigor"],{spd:3, hp:6, mag:1}, 44),
+      I("b14","黎明の翼靴","boots","legend",["angel","light","swift","vigor"],{spd:4, hp:6, crt:2}, 46),
+      I("b15","機星のグリーヴ","boots","epic",["tech","star","swift"],{spd:4, mag:2, def:1}, 40),
+      I("b16","熾天の行軍靴","boots","legend",["angel","holy","swift"],{spd:3, hp:6, crt:2, def:2}, 50),
 
       // 祈り系
       I("b11","聖痕のサンダル","boots","epic",["stigma","holy","prayer","swift"],{spd:4, mag:1, hp:4}, 32),
@@ -516,6 +534,9 @@
       I("s13","審判の光剣","sword","legend",["holy","light","focus"],{atk:7, mag:3, crt:2}, 50),
       I("s14","星核の細剣","sword","legend",["star","light","arcane","swift"],{atk:6, spd:2, mag:2, crt:2}, 46),
       I("s17","大地の聖剣","sword","epic",["earth","holy","prayer","guard"],{atk:7, hp:6, def:1}, 32),
+      I("s18","星火の大剣","sword","legend",["fire","star","rage"],{atk:8, mag:1, crt:2, def:1}, 44),
+      I("s19","星芒の双刃","sword","epic",["star","light","swift"],{atk:6, spd:3, crt:2}, 40),
+      I("s20","熾天の大鎌","sword","legend",["angel","holy","arcane"],{atk:8, mag:3, crt:2}, 52),
 
       // 祈り系
       I("s15","聖痕の剣尖","sword","epic",["stigma","holy","light","focus"],{atk:6, mag:3, crt:2}, 34),
