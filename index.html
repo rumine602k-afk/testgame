@@ -1375,6 +1375,12 @@
       renderSlots();
     }
 
+   // 勝利時はHPを全快
+    const { tot } = computeTotalForCurrent();
+    p._max = tot.hp;
+    p.hp = p._max;
+    p.phoenixUsed = false;
+
     saveGame();
   }
 
