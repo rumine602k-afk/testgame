@@ -416,6 +416,7 @@
 
     // 祈り系
     { id:"stigma_prayer", name:"聖痕の祈り", tags:["stigma","prayer"], each:1, desc:"回復量+30%、聖撃+。", mods:{ healBoost:0.30, holySmiteChance:0.14 }, score: 14 },
+	      { id:"vigor_prayer", name:"生命の連祷", tags:["vigor","prayer"], each:1, desc:"回復量+35%、HP+10。", statBonus:{ hp:10 }, mods:{ healBoost:0.35 }, score: 15 },
     { id:"angel_holy", name:"天使礼拝", tags:["angel","holy"], each:1, desc:"被弾軽減の加護+、復活付与。", mods:{ angelGuard:0.10, phoenix:true }, score: 16 },
     { id:"angel_light", name:"光翼", tags:["angel","light"], each:1, desc:"回避+10%、CRT+2。", statBonus:{ crt:2 }, mods:{ dodgeBonus:10 }, score: 12 },
   ];
@@ -458,6 +459,7 @@
       I("h5","鍛冶師のゴーグル","head","common",["tech","pierce"],{atk:1, spd:1, crt:1}, RARITY_MIN_LV.common),
       I("h6","竜鱗のヘルム","head","legend",["dragon","fire","guard"],{def:5, hp:10, atk:2}, 34),
       I("h7","月光のリボン","head","epic",["moon","light","swift"],{spd:2, mag:3, crt:2}, RARITY_MIN_LV.epic+4),
+		      I("h13","流星の額当て","head","epic",["star","swift","arcane"],{spd:2, mag:4, crt:2}, 30),
       I("h9","星詠みのティアラ","head","legend",["star","light","arcane"],{mag:5, crt:2, def:1}, 36),
       I("h10","大聖堂の光輪","head","legend",["holy","light","vigor"],{mag:3, crt:3, def:3, hp:6}, 42),
 
@@ -475,6 +477,7 @@
       I("a7","星屑の装束","armor","legend",["star","light","cloth","arcane"],{mag:6, spd:2, hp:6}, 40),
       I("a8","機巧の装甲服","armor","rare",["tech","metal","pierce"],{def:4, spd:1, crt:2}, RARITY_MIN_LV.rare+4),
       I("a9","熾天使の胸甲","armor","legend",["holy","light","metal","guard"],{def:5, hp:12, mag:2, crt:1}, 48),
+      I("a12","護光の外衣","armor","epic",["angel","cloth","holy","vigor"],{def:3, hp:10, mag:2}, 34),
 
       // 祈り系
       I("a10","聖痕の法衣","armor","epic",["stigma","holy","prayer","cloth","vigor"],{def:4, mag:4, hp:6}, 30),
@@ -490,6 +493,7 @@
       I("b7","月のスリッパ","boots","epic",["moon","ice","swift"],{spd:3, mag:2}, RARITY_MIN_LV.epic+4),
       I("b8","整備士の安全靴","boots","common",["tech","metal"],{def:2, spd:1}, RARITY_MIN_LV.common+2),
       I("b9","星道のブーツ","boots","legend",["star","light","swift","arcane"],{spd:3, mag:2, crt:1}, 38),
+      I("b13","機動サーキット","boots","epic",["tech","swift","pierce"],{spd:5, atk:1, crt:1}, 28),
       I("b10","巡礼の羽靴","boots","legend",["holy","light","vigor"],{spd:3, hp:6, mag:1}, 44),
 
       // 祈り系
@@ -511,6 +515,7 @@
       I("s12","祈りの短剣","sword","common",["holy","vigor","prayer"],{atk:3, mag:1, spd:1}, RARITY_MIN_LV.common+1),
       I("s13","審判の光剣","sword","legend",["holy","light","focus"],{atk:7, mag:3, crt:2}, 50),
       I("s14","星核の細剣","sword","legend",["star","light","arcane","swift"],{atk:6, spd:2, mag:2, crt:2}, 46),
+      I("s17","大地の聖剣","sword","epic",["earth","holy","prayer","guard"],{atk:7, hp:6, def:1}, 32),
 
       // 祈り系
       I("s15","聖痕の剣尖","sword","epic",["stigma","holy","light","focus"],{atk:6, mag:3, crt:2}, 34),
@@ -1456,9 +1461,9 @@
   // ---- ドロップ（敵Lvで強化＆制限） ----
   function dropTierForLevel(lv){
     // 強い敵ほどレジェンド率増。ただし minDropLv で最終制限。
-    const pLegend = clamp((lv - 24) * 0.004, 0, 0.18);
-    const pEpic   = clamp(0.08 + (lv - 10) * 0.005, 0.08, 0.35);
-    const pRare   = clamp(0.28 + lv * 0.006, 0.28, 0.55);
+    const pLegend = clamp(0.015 + (lv - 20) * 0.005, 0.015, 0.20);
+    const pEpic   = clamp(0.12 + (lv - 12) * 0.006, 0.12, 0.42);
+    const pRare   = clamp(0.32 + lv * 0.005, 0.32, 0.50);
 
     const allowed = ["common"];
     if (lv >= RARITY_MIN_LV.rare) allowed.push("rare");
