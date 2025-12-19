@@ -1161,7 +1161,8 @@
 
     // ドロップ傾向を表示
     const rule = dropTierForLevel(t.lv);
-    const tierLine = `drop: ${rule.allowed.join("/")}, legend率~${Math.round(rule.pLegend*100)}%`;
+    const legendPct = (rule.pLegend * 100).toFixed(2);
+    const tierLine = `drop: ${rule.allowed.join("/")}, legend率 ${legendPct}%`;
 
     elFoeSummary.innerHTML = `報酬EXP: ${t.xp} / タグ傾向: ${foeTags}<br/>想定: HP ${st.hp}, ATK ${st.atk}, DEF ${st.def}, SPD ${st.spd}<br/>${tierLine}`;
 
