@@ -1,5 +1,2176 @@
 <!doctype html>
-<html>
-  <head><meta charset="utf-8"><title>testgame</title></head>
-  <body>Hello</body>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>装備ビルド検索ミニゲーム（アリーナ&ドロップ版 v3：聖痕と天使）</title>
+  <style>
+    :root{
+      --bg:#0b0d12;
+      --panel:#111527;
+      --panel2:#0f1322;
+      --text:#e9ecf5;
+      --muted:#aab2c7;
+      --line:rgba(255,255,255,.08);
+      --good:#79d39a;
+      --warn:#f2c14e;
+      --bad:#ff6b6b;
+      --blue:#74c0fc;
+      --chip:#1a2040;
+      --shadow: 0 16px 45px rgba(0,0,0,.35);
+      --r:18px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic", sans-serif;
+    }
+    *{box-sizing:border-box}
+    body{margin:0; font-family:var(--sans); background:radial-gradient(1200px 700px at 15% 0%, rgba(116,192,252,.16), transparent 55%),
+                          radial-gradient(900px 600px at 85% 10%, rgba(121,211,154,.12), transparent 50%),
+                          radial-gradient(900px 600px at 40% 100%, rgba(242,193,78,.10), transparent 55%),
+                          var(--bg);
+         color:var(--text);
+         min-height:100vh;
+    }
+    header{padding:18px 18px 8px; max-width:1300px; margin:0 auto;}
+    h1{font-size:18px; margin:0 0 6px; letter-spacing:.02em;}
+    .sub{color:var(--muted); font-size:12px; line-height:1.4}
+
+    .topwrap{max-width:1300px; margin:0 auto; padding:12px 18px 0;}
+
+    .wrap{max-width:1300px; margin:0 auto; padding:12px 18px 28px; display:grid; grid-template-columns: 420px 1fr; gap:14px;}
+    @media (max-width: 1020px){ .wrap{grid-template-columns: 1fr;} }
+
+    .panel{background:linear-gradient(180deg, rgba(255,255,255,.04), transparent 40%), var(--panel);
+           border:1px solid var(--line); border-radius:var(--r); box-shadow:var(--shadow); overflow:hidden;}
+    .panel .hd{padding:14px 14px 10px; border-bottom:1px solid var(--line); display:flex; gap:10px; align-items:center; justify-content:space-between; flex-wrap:wrap;}
+    .panel .hd .t{font-size:13px; color:var(--muted)}
+    .panel .bd{padding:14px;}
+
+    .row{display:flex; gap:10px; align-items:center; flex-wrap:wrap;}
+    .row + .row{margin-top:10px;}
+
+    .slotGrid{display:grid; grid-template-columns: 1fr; gap:10px;}
+
+    .slot{background:var(--panel2); border:1px solid var(--line); border-radius:14px; padding:10px;}
+    .slotTop{display:flex; justify-content:space-between; align-items:center; gap:10px;}
+    .slotName{font-size:12px; color:var(--muted)}
+
+    select, input, button{
+      font:inherit; color:var(--text);
+      background:rgba(255,255,255,.04);
+      border:1px solid var(--line);
+      border-radius:12px;
+      padding:10px 10px;
+      outline:none;
+    }
+    select, input{height:40px;}
+    select{width:100%;}
+    input[type="number"]{width:120px;}
+    input[type="text"]{width:240px;}
+
+    button{cursor:pointer; transition:transform .06s ease, filter .15s ease;}
+    button:hover{filter:brightness(1.1)}
+    button:active{transform:translateY(1px)}
+    button:disabled{opacity:.45; cursor:not-allowed; filter:none;}
+    .btn{padding:10px 12px; border-radius:12px; background:rgba(116,192,252,.10);} 
+    .btn2{background:rgba(121,211,154,.12)}
+    .btn3{background:rgba(242,193,78,.12)}
+    .btnDanger{background:rgba(255,107,107,.12)}
+
+    .mini{font-size:12px; color:var(--muted)}
+    .pill{display:inline-flex; align-items:center; gap:6px; padding:6px 10px; border:1px solid var(--line); background:rgba(255,255,255,.03);
+      border-radius:999px; font-size:12px; color:var(--muted)}
+
+    .stats{display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:8px;}
+    .stat{background:rgba(255,255,255,.03); border:1px solid var(--line); border-radius:12px; padding:10px;}
+    .stat .k{font-size:11px; color:var(--muted)}
+    .stat .v{font-family:var(--mono); font-size:14px; margin-top:6px;}
+
+    .itemLine{margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;}
+    .chip{background:var(--chip); border:1px solid var(--line); border-radius:999px; padding:6px 10px; font-size:12px; color:var(--muted)}
+
+    .twoCol{display:grid; grid-template-columns: 1fr 1fr; gap:12px;}
+    @media (max-width: 720px){
+      .twoCol{grid-template-columns:1fr;}
+      input[type="text"], input[type="number"]{width:100%;}
+    }
+
+    .results{display:grid; grid-template-columns: 1fr; gap:10px;}
+    .build{background:var(--panel2); border:1px solid var(--line); border-radius:16px; padding:12px;}
+    .buildTop{display:flex; justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap;}
+    .buildTitle{font-size:13px;}
+    .buildTitle span{color:var(--muted); font-size:12px}
+    .buildScore{font-family:var(--mono); font-size:13px; color:var(--blue)}
+
+    .grid5{display:grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap:8px; margin-top:10px;}
+    @media (max-width: 1150px){ .grid5{grid-template-columns: repeat(2, minmax(0,1fr));} }
+
+    .smallBox{border:1px solid var(--line); border-radius:14px; padding:10px; background:rgba(255,255,255,.02)}
+    .smallBox .k{font-size:11px; color:var(--muted)}
+    .smallBox .v{font-size:12px; margin-top:6px; line-height:1.35}
+
+    .arena{display:grid; grid-template-columns: 1fr 1fr; gap:12px;}
+    @media (max-width: 900px){ .arena{grid-template-columns:1fr;} }
+
+    .log{height:220px; overflow:auto; padding:10px; border-radius:14px; border:1px solid var(--line); background:rgba(0,0,0,.18); font-family:var(--mono); font-size:12px;}
+
+    .bar{height:10px; border-radius:999px; background:rgba(255,255,255,.08); border:1px solid var(--line); overflow:hidden}
+    .bar > div{height:100%; width:50%; background:rgba(121,211,154,.35)}
+    .bar.red > div{background:rgba(255,107,107,.35)}
+    .bar.blue > div{background:rgba(116,192,252,.35)}
+
+    .hint{color:var(--muted); font-size:12px; line-height:1.5; white-space:pre-line}
+
+    .inv{max-height:220px; overflow:auto; border:1px solid var(--line); border-radius:14px; padding:10px; background:rgba(0,0,0,.12)}
+    .invItem{display:flex; gap:8px; align-items:center; justify-content:space-between; padding:8px 8px; border-radius:12px; border:1px solid rgba(255,255,255,.04); background:rgba(255,255,255,.02)}
+    .invItem + .invItem{margin-top:8px;}
+
+    .canvasWrap{border:1px solid var(--line); border-radius:14px; overflow:hidden; background:rgba(0,0,0,.18)}
+    canvas{display:block; width:100%; height:auto; image-rendering: pixelated;}
+
+    .footer{max-width:1300px; margin:0 auto; padding:0 18px 28px; color:var(--muted); font-size:12px;}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>装備ビルド検索ミニゲーム（アリーナ&ドロップ版 v3：聖痕と天使）</h1>
+    <div class="sub">祈りの世界観に寄せて再調整。聖痕(stigma)と天使(angel)タグが追加。強い装備は強い敵からしか落ちない。セット効果は「タグ系」「複合タグ」「特定装備コンボ」。</div>
+  </header>
+
+  <div class="topwrap">
+    <section class="panel" id="arenaPanel">
+      <div class="hd">
+        <div>
+          <div style="font-size:14px;">アリーナ</div>
+          <div class="t">勝てば経験値とドロップ。負けると経験値を少し失う。祈りで回復できる。</div>
+        </div>
+        <div class="row">
+          <button class="btn btn3" id="btnSpawn">敵を出現</button>
+          <button class="btn" id="btnRound">1ラウンド</button>
+          <button class="btn btn2" id="btnAuto">決着まで</button>
+          <button class="btn" id="btnHeal">祈り</button>
+		  <button class="btn" id="btnSearch">検索する</button>
+          <button class="btn btn2" id="btnEquipTop">1位を装備</button>
+		  <div style="visibility: hidden">
+			  <button class="btn btnDanger" id="btnNewGame">ニューゲーム</button>
+			  <button class="btn btnDanger" id="btnClearLog">ログ消去</button>
+		   </div>
+        </div>
+      </div>
+      <div class="bd">
+        <div class="slot" style="margin-bottom:12px;">
+          <div class="slotTop">
+            <div class="slotName">戦闘ビュー（ドット絵）</div>
+            <div class="mini">勇者は右向き / 敵は左向き</div>
+          </div>
+          <div class="canvasWrap" style="margin-top:10px;">
+            <canvas id="battleCanvas" width="860" height="220"></canvas>
+          </div>
+        </div>
+
+        <div class="arena">
+          <div class="smallBox">
+            <div class="k">あなた</div>
+            <div class="v"><span id="youName">SAGA</span> / Lv <span id="youLv">1</span></div>
+
+            <div class="mini" style="margin-top:10px;">EXP: <span id="youExp">0</span> / <span id="youExpNext">0</span></div>
+            <div class="bar blue" style="margin-top:6px;"><div id="youExpBar"></div></div>
+
+            <div class="mini" style="margin-top:10px;">HP: <span id="youHp">0</span> / <span id="youHpMax">0</span></div>
+            <div class="bar" style="margin-top:6px;"><div id="youHpBar"></div></div>
+
+            <div class="hint" style="margin-top:10px;" id="youSummary"></div>
+          </div>
+
+          <div class="smallBox">
+            <div class="k">敵</div>
+            <div class="row" style="margin-top:6px;">
+              <select id="enemySelect" style="flex:1; min-width:220px;"></select>
+            </div>
+            <div class="v" style="margin-top:8px;"><span id="foeName">-</span> / Lv <span id="foeLv">-</span></div>
+
+            <div class="mini" style="margin-top:10px;">HP: <span id="foeHp">0</span> / <span id="foeHpMax">0</span></div>
+            <div class="bar red" style="margin-top:6px;"><div id="foeHpBar"></div></div>
+
+            <div class="hint" style="margin-top:10px;" id="foeSummary"></div>
+          </div>
+        </div>
+
+        <div class="twoCol" style="margin-top:12px;">
+          <div class="slot">
+            <div class="slotTop">
+              <div class="slotName">戦闘ログ</div>
+              <div class="mini" id="autoState">手動</div>
+            </div>
+            <div class="log" id="log" style="margin-top:10px;"></div>
+          </div>
+
+          <div class="slot">
+            <div class="slotTop">
+              <div class="slotName">ドロップ / 所持</div>
+              <div class="mini" id="invMeta">0個</div>
+            </div>
+            <div class="hint" id="lootLine" style="margin-top:10px;">まだドロップなし。</div>
+            <div class="row" style="margin-top:10px; justify-content:space-between;">
+              <div class="pill">所持数: <span id="invCount" style="color:var(--text)"></span></div>
+              <div class="pill">未所持: <span id="invMissing" style="color:var(--text)"></span></div>
+            </div>
+            <div class="inv" id="invList" style="margin-top:10px;"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="wrap">
+    <section class="panel" id="leftPanel">
+      <div class="hd">
+        <div>
+          <div style="font-size:14px;">キャラクター</div>
+          <div class="t">装備 + セット効果が即反映（装備選択肢は所持品のみ）</div>
+        </div>
+        <div class="row">
+          <button class="btn btn3" id="btnRandom">おすすめ装備</button>
+          <button class="btn btnDanger" id="btnClear">全部外す</button>
+        </div>
+      </div>
+      <div class="bd">
+        <div class="row" style="justify-content:space-between;">
+          <div class="pill">基礎ステータス(Lv込み) <span id="baseTag" style="font-family:var(--mono); color:var(--text)"></span></div>
+        </div>
+        <div class="row" style="justify-content:space-between; margin-top:8px;">
+          <div class="pill">タグ: <span id="tagSummary" style="color:var(--text)"></span></div>
+          <div class="pill">セット: <span id="setSummary" style="color:var(--text)"></span></div>
+        </div>
+        <div class="row" style="margin-top:8px;">
+          <div class="hint" id="setDetails"></div>
+        </div>
+
+        <div style="margin-top:12px" class="stats" id="statGrid"></div>
+
+        <div style="margin-top:14px" class="slotGrid" id="slotGrid"></div>
+
+        <div style="margin-top:12px" class="hint">聖痕(stigma)は「祈り」と「聖撃」を伸ばす。天使(angel)は「加護」と「復活」を寄せる。強い装備は強い敵からしか落ちない設定。</div>
+      </div>
+    </section>
+
+    <section class="panel" id="searchPanel">
+      <div class="hd">
+        <div>
+          <div style="font-size:14px;">ビルド検索</div>
+          <div class="t">所持品だけで組み合わせ検索（図鑑検索も可）</div>
+        </div>
+        <div class="row">
+          <button class="btn" id="btnSearch">検索する</button>
+          <button class="btn btn2" id="btnEquipTop">1位を装備</button>
+        </div>
+      </div>
+      <div class="bd">
+        <div class="twoCol">
+          <div class="slot">
+            <div class="slotTop">
+              <div class="slotName">条件（最低値）</div>
+              <div class="mini" id="comboCount"></div>
+            </div>
+            <div class="row" style="margin-top:8px;">
+              <label class="mini">ATK <input type="number" id="minAtk" value="0" min="0" /></label>
+              <label class="mini">DEF <input type="number" id="minDef" value="0" min="0" /></label>
+              <label class="mini">SPD <input type="number" id="minSpd" value="0" min="0" /></label>
+              <label class="mini">HP <input type="number" id="minHp" value="0" min="0" /></label>
+              <label class="mini">MAG <input type="number" id="minMag" value="0" min="0" /></label>
+              <label class="mini">CRT <input type="number" id="minCrt" value="0" min="0" /></label>
+            </div>
+            <div class="row" style="margin-top:10px;">
+              <input type="text" id="textQuery" placeholder="名前/タグ検索 (例: holy, 聖痕, 天使, prayer)" />
+              <input type="text" id="mustTags" placeholder="必須タグ (例: holy,stigma)" />
+              <input type="text" id="banTags" placeholder="除外タグ (例: cursed)" />
+            </div>
+            <div class="row" style="margin-top:10px; justify-content:space-between;">
+              <label class="mini">並び替え
+                <select id="sortBy" style="width:180px; height:40px;">
+                  <option value="power">Power(総合)</option>
+                  <option value="atk">ATK</option>
+                  <option value="def">DEF</option>
+                  <option value="spd">SPD</option>
+                  <option value="hp">HP</option>
+                  <option value="mag">MAG</option>
+                  <option value="crt">CRT</option>
+                </select>
+              </label>
+              <label class="mini">表示件数
+                <select id="limit" style="width:120px; height:40px;">
+                  <option>20</option>
+                  <option selected>50</option>
+                  <option>100</option>
+                </select>
+              </label>
+            </div>
+            <div class="row" style="margin-top:10px; justify-content:space-between;">
+              <label class="mini" style="display:flex; gap:8px; align-items:center;">
+                <input type="checkbox" id="searchAllItems" style="width:18px; height:18px;" />
+                図鑑検索（未所持も含む）
+              </label>
+              <span class="mini">最小値チェックは「セット効果の補正」も含む。</span>
+            </div>
+          </div>
+
+          <div class="slot">
+            <div class="slotTop">
+              <div class="slotName">ヒント</div>
+              <div class="mini">攻略</div>
+            </div>
+            <div class="hint" style="margin-top:10px;">
+              ・祈り(prayer)と聖痕(stigma)は回復と聖撃を伸ばす。\n
+              ・天使(angel)は被ダメ軽減の「加護」や復活を狙える。\n
+              ・強敵は強い装備しか落とさない。弱敵でレジェンドは出ない。\n
+              ・特定装備コンボは強力。揃ったら一気に難易度が崩れる。
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top:12px" class="slot">
+          <div class="slotTop">
+            <div class="slotName">検索結果</div>
+            <div class="mini" id="resultMeta">0件</div>
+          </div>
+          <div class="results" id="results" style="margin-top:10px"></div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="footer">
+    セット効果: タグ2点(2点) + 複合タグ(2点) + 特定装備コンボ(レア)。dragon/star/holy/angel は「そのタグを持つレジェンドが3つ以上」で(3点)。聖痕は stigma、天使は angel。
+  </div>
+
+<script>
+(() => {
+  const STAT_KEYS = ["atk","def","spd","hp","mag","crt"]; 
+  const STAT_LABEL = {atk:"ATK", def:"DEF", spd:"SPD", hp:"HP", mag:"MAG", crt:"CRT"};
+
+  const baseLv1 = { atk: 6, def: 4, spd: 5, hp: 38, mag: 3, crt: 4 };
+
+  const SLOTS = [
+    { key:"head", label:"頭" },
+    { key:"armor", label:"鎧" },
+    { key:"boots", label:"靴" },
+    { key:"left", label:"左手剣" },
+    { key:"right", label:"右手剣" },
+  ];
+
+  // ---- セット効果（タグ2点） ----
+  const SET2 = {
+    metal:  { name:"鋼の連続斬り(2)", desc:"攻撃回数+1。", mods:{ extraSwings: 1 }, score: 10 },
+    fire:   { name:"火精の追撃(2)", desc:"攻撃後にファイア追撃(確率)。", mods:{ fireProcChance: 0.35 }, score: 8 },
+    ice:    { name:"霜縛り(2)", desc:"敵の行動が鈍る。凍結チャンス(小)。", mods:{ foeSlow: 1, freezeChance: 0.10 }, score: 7 },
+    holy:   { name:"祝福(2)", desc:"与ダメの一部を回復。", mods:{ lifesteal: 0.06 }, score: 9 },
+    shadow: { name:"影の奇襲(2)", desc:"回避+10%。先制時に追加ダメ。", mods:{ dodgeBonus: 10, backstab: 0.15 }, score: 9 },
+    tech:   { name:"オーバークロック(2)", desc:"CRT+6、防御貫通+2。", statBonus:{ crt: 6 }, mods:{ armorPen: 2 }, score: 9 },
+    earth:  { name:"岩肌(2)", desc:"被ダメ-8%、HP+8。", statBonus:{ hp: 8 }, mods:{ drPct: 0.08 }, score: 8 },
+    moon:   { name:"月の加護(2)", desc:"回避+6%、MAG+2。", statBonus:{ mag: 2 }, mods:{ dodgeBonus: 6 }, score: 6 },
+    star:   { name:"星紋の共鳴(2)", desc:"攻撃後に星弾(確率)。", mods:{ arcaneProcChance: 0.25 }, score: 8 },
+    dragon: { name:"竜炎の余熱(2)", desc:"ファイア追撃(確率) + HP+6。", statBonus:{ hp: 6 }, mods:{ fireProcChance: 0.25 }, score: 8 },
+    cloth:  { name:"詠唱補助(2)", desc:"MAG+3、回復量+。", statBonus:{ mag: 3 }, mods:{ healBoost: 0.20 }, score: 7 },
+    bone:   { name:"骨の決意(2)", desc:"DEF+2、CRT+2。", statBonus:{ def: 2, crt: 2 }, score: 6 },
+    leather:{ name:"旅の勘(2)", desc:"SPD+2、回避+4%。", statBonus:{ spd: 2 }, mods:{ dodgeBonus: 4 }, score: 6 },
+    wood:   { name:"木霊のしぶとさ(2)", desc:"被ダメ-5%、攻撃時に根(小)。", mods:{ drPct: 0.05, rootChance: 0.08 }, score: 6 },
+    light:  { name:"光の奔流(2)", desc:"CRT+4、聖撃(小)。", statBonus:{ crt: 4 }, mods:{ holySmiteChance: 0.12 }, score: 7 },
+
+    // 追加（数を増やす）
+    arcane: { name:"秘術回路(2)", desc:"MAG+2、星弾確率+。", statBonus:{ mag: 2 }, mods:{ arcaneProcChance: 0.10 }, score: 6 },
+    rage:   { name:"怒涛(2)", desc:"ATK+2、CRT+2。", statBonus:{ atk:2, crt:2 }, score: 6 },
+    guard:  { name:"守勢(2)", desc:"DEF+3、被ダメ-4%。", statBonus:{ def:3 }, mods:{ drPct: 0.04 }, score: 7 },
+    focus:  { name:"集中(2)", desc:"CRT+5、MAG+1。", statBonus:{ crt:5, mag:1 }, score: 6 },
+    vigor:  { name:"活力(2)", desc:"HP+10、回復量+10%。", statBonus:{ hp:10 }, mods:{ healBoost: 0.10 }, score: 7 },
+    swift:  { name:"迅速(2)", desc:"SPD+3。", statBonus:{ spd:3 }, score: 6 },
+    pierce: { name:"貫通(2)", desc:"防御貫通+2、ATK+1。", statBonus:{ atk:1 }, mods:{ armorPen:2 }, score: 6 },
+    frost:  { name:"氷核(2)", desc:"凍結確率+。被ダメ-3%。", mods:{ freezeChance:0.08, drPct:0.03 }, score: 7 },
+    blaze:  { name:"灼熱核(2)", desc:"ファイア追撃確率+。", mods:{ fireProcChance:0.10 }, score: 6 },
+    eclipse:{ name:"蝕(2)", desc:"先制ダメ+、回避+4%。", mods:{ backstab:0.10, dodgeBonus:4 }, score: 6 },
+
+    // 祈り系
+    prayer: { name:"祈りの連鎖(2)", desc:"祈り(回復)の効果+25%。聖撃(小)。", mods:{ healBoost:0.25, holySmiteChance:0.08 }, score: 8 },
+    stigma: { name:"聖痕(2)", desc:"聖撃+、回復量+15%、被ダメ-4%。", mods:{ holySmiteChance:0.12, healBoost:0.15, drPct:0.04 }, score: 9 },
+    angel:  { name:"天使の翼(2)", desc:"回避+8%。被弾時に「加護」(確率)で軽減。", mods:{ dodgeBonus:8, angelGuard:0.14 }, score: 9 },
+  };
+
+  // レジェンド3点
+  const SET3_LEGEND = {
+    dragon: { name:"竜王の覇気(3)", desc:"攻撃回数さらに+1。ファイア追撃が強化。被ダメ-15%。", mods:{ extraSwings: 1, fireProcChance: 0.55, drPct: 0.15 }, score: 24 },
+    star:   { name:"星冠の支配(3)", desc:"星落とし発動。CRT+12、MAG+3。", statBonus:{ crt: 12, mag: 3 }, mods:{ starfall: true }, score: 26 },
+    holy:   { name:"熾天使の裁き(3)", desc:"聖撃が強化。与ダメ回復+。瀕死で1回だけ復活。", mods:{ holySmiteChance: 0.35, lifesteal: 0.10, phoenix: true }, score: 28 },
+    angel:  { name:"天軍の降臨(3)", desc:"回避+12%。聖撃が強化。瀕死で1回だけ復活。", mods:{ dodgeBonus:12, holySmiteChance: 0.25, phoenix: true }, score: 27 },
+  };
+
+  // ---- 複合タグセット（条件は tagsEach 以上） ----
+  const COMBO_TAG_SETS = [
+    { id:"steel_flame", name:"灼鉄機構", tags:["metal","fire"], each:1, desc:"攻撃回数+1(小)とファイア追撃+。", mods:{ extraSwings: 1, fireProcChance: 0.12 }, score: 12 },
+    { id:"holy_moon", name:"月下の祈り", tags:["holy","moon"], each:1, desc:"回復量+25%、回避+6%。", mods:{ healBoost:0.25, dodgeBonus:6 }, score: 10 },
+    { id:"shadow_tech", name:"暗号刃", tags:["shadow","tech"], each:1, desc:"防御貫通+3、先制ダメ+。", mods:{ armorPen:3, backstab:0.12 }, score: 11 },
+    { id:"ice_earth", name:"凍土", tags:["ice","earth"], each:1, desc:"被ダメ-8%、凍結+。", mods:{ drPct:0.08, freezeChance:0.08 }, score: 11 },
+    { id:"star_light", name:"星光整列", tags:["star","light"], each:1, desc:"星弾+、CRT+4。", statBonus:{ crt:4 }, mods:{ arcaneProcChance:0.12 }, score: 10 },
+    { id:"cloth_arcane", name:"詠唱式", tags:["cloth","star"], each:1, desc:"MAG+3、星落とし確率(小)。", statBonus:{ mag:3 }, mods:{ starfallChance:0.18 }, score: 10 },
+    { id:"dragon_metal", name:"竜鱗鍛造", tags:["dragon","metal"], each:1, desc:"HP+10、被ダメ-6%。", statBonus:{ hp:10 }, mods:{ drPct:0.06 }, score: 11 },
+    { id:"holy_metal", name:"聖堂鋼", tags:["holy","metal"], each:1, desc:"聖撃+、DEF+2。", statBonus:{ def:2 }, mods:{ holySmiteChance:0.10 }, score: 10 },
+    { id:"shadow_moon", name:"宵闇の月", tags:["shadow","moon"], each:1, desc:"回避+10%、SPD+1。", statBonus:{ spd:1 }, mods:{ dodgeBonus:10 }, score: 10 },
+    { id:"earth_metal", name:"城塞", tags:["earth","metal"], each:1, desc:"DEF+3、被ダメ-6%。", statBonus:{ def:3 }, mods:{ drPct:0.06 }, score: 11 },
+
+    // 祈り系
+    { id:"stigma_prayer", name:"聖痕の祈り", tags:["stigma","prayer"], each:1, desc:"回復量+30%、聖撃+。", mods:{ healBoost:0.30, holySmiteChance:0.14 }, score: 14 },
+    { id:"angel_holy", name:"天使礼拝", tags:["angel","holy"], each:1, desc:"被弾軽減の加護+、復活付与。", mods:{ angelGuard:0.10, phoenix:true }, score: 16 },
+    { id:"angel_light", name:"光翼", tags:["angel","light"], each:1, desc:"回避+10%、CRT+2。", statBonus:{ crt:2 }, mods:{ dodgeBonus:10 }, score: 12 },
+  ];
+
+  // ---- 特定装備コンボ（レア） ----
+  // requires に列挙された装備IDがすべて揃ったら発動
+  const SPECIAL_ITEM_SETS = [
+    { id:"astral_over", name:"アストラル・オーバードライブ", requires:["h9","a7","b9"], desc:"星落とし確率大、MAG+4、SPD+2。", statBonus:{ mag:4, spd:2 }, mods:{ starfall:true, arcaneProcChance:0.20 }, score: 28 },
+    { id:"seraph_march", name:"熾天使の行進", requires:["h10","a9","b10"], desc:"復活付与、回復量+35%、聖撃+。", mods:{ phoenix:true, healBoost:0.35, holySmiteChance:0.18, lifesteal:0.04 }, score: 30 },
+    { id:"forge_standard", name:"工房の正規装備", requires:["h5","a8","b8","s8"], desc:"防御貫通+4、攻撃回数+1。", mods:{ armorPen:4, extraSwings:1 }, score: 26 },
+    { id:"shadow_ball", name:"影の舞踏会", requires:["h4","a5","b5","s5"], desc:"回避+14%、先制ダメ+25%、CRT+6。", statBonus:{ crt:6 }, mods:{ dodgeBonus:14, backstab:0.25 }, score: 28 },
+    { id:"dragon_dual", name:"竜装二刀", requires:["h6","a6","b6","s6"], desc:"攻撃回数+1、ファイア追撃+、被ダメ-10%。", mods:{ extraSwings:1, fireProcChance:0.25, drPct:0.10 }, score: 30 },
+    { id:"moon_saber", name:"月光剣技", requires:["h7","b7","s7"], desc:"回避+10%、SPD+2、凍結+。", statBonus:{ spd:2 }, mods:{ dodgeBonus:10, freezeChance:0.08 }, score: 24 },
+    { id:"judgement", name:"審判の系譜", requires:["s13","a3","b3"], desc:"聖撃が強化、CRT+6。", statBonus:{ crt:6 }, mods:{ holySmiteChance:0.18 }, score: 25 },
+    { id:"star_eater", name:"星喰いの契約", requires:["s11","h9"], desc:"星弾が強化、MAG+2、先制ダメ+。", statBonus:{ mag:2 }, mods:{ arcaneProcChance:0.20, backstab:0.10 }, score: 22 },
+    { id:"earth_breaker", name:"地割りの一式", requires:["s10","a2","b2"], desc:"DEF+3、被ダメ-10%。", statBonus:{ def:3 }, mods:{ drPct:0.10 }, score: 22 },
+    { id:"pilgrim", name:"巡礼の約束", requires:["s12","a1","b10"], desc:"回復量+25%、HP+8。", statBonus:{ hp:8 }, mods:{ healBoost:0.25 }, score: 20 },
+
+    // 聖痕・天使コンボ
+    { id:"stigmata_vow", name:"聖痕の誓約", requires:["h11","a10","b11","s15"], desc:"祈りが強化。聖撃+。被ダメ-8%。", mods:{ healBoost:0.40, holySmiteChance:0.22, drPct:0.08 }, score: 34 },
+    { id:"angelic_liturgy", name:"天使礼式", requires:["h12","a11","b12","s16"], desc:"復活付与。加護が強化。聖撃が強化。", mods:{ phoenix:true, angelGuard:0.22, holySmiteChance:0.24, lifesteal:0.06 }, score: 36 },
+  ];
+
+  // ---- アイテム ----
+  // minDropLv: このLv以上の敵からのみドロップ可能
+  function I(id, name, slot, rarity, tags, stats, minDropLv){
+    const full = { atk:0, def:0, spd:0, hp:0, mag:0, crt:0 };
+    for (const k of Object.keys(stats||{})) full[k] = stats[k];
+    return { id, name, slot, rarity, tags: tags||[], stats: full, minDropLv: minDropLv ?? 1 };
+  }
+
+  const RARITY_MIN_LV = { common: 1, rare: 4, epic: 12, legend: 26 };
+
+  const items = {
+    head: [
+      I("h1","見習いのフード","head","common",["cloth","ice"],{def:1, spd:1, mag:2}, RARITY_MIN_LV.common),
+      I("h2","獣骨の兜","head","rare",["bone","earth"],{def:4, spd:-1, hp:6}, RARITY_MIN_LV.rare),
+      I("h3","金糸の冠","head","epic",["holy","light","focus"],{def:2, mag:4, crt:2}, RARITY_MIN_LV.epic),
+      I("h4","夜霧のフード","head","rare",["shadow","ice","cloth","eclipse"],{spd:3, mag:1, crt:1}, RARITY_MIN_LV.rare+3),
+      I("h5","鍛冶師のゴーグル","head","common",["tech","pierce"],{atk:1, spd:1, crt:1}, RARITY_MIN_LV.common),
+      I("h6","竜鱗のヘルム","head","legend",["dragon","fire","guard"],{def:5, hp:10, atk:2}, 34),
+      I("h7","月光のリボン","head","epic",["moon","light","swift"],{spd:2, mag:3, crt:2}, RARITY_MIN_LV.epic+4),
+      I("h9","星詠みのティアラ","head","legend",["star","light","arcane"],{mag:5, crt:2, def:1}, 36),
+      I("h10","大聖堂の光輪","head","legend",["holy","light","vigor"],{mag:3, crt:3, def:3, hp:6}, 42),
+
+      // 祈り系
+      I("h11","聖痕のヴェール","head","epic",["stigma","holy","prayer","cloth"],{mag:4, def:1, crt:2, hp:3}, 28),
+      I("h12","天使の面頬","head","legend",["angel","holy","light","vigor"],{def:4, hp:8, mag:2, crt:2}, 54),
+    ],
+    armor: [
+      I("a1","旅人のコート","armor","common",["cloth","leather","vigor"],{def:2, spd:1, hp:4}, RARITY_MIN_LV.common),
+      I("a2","鋼鉄の鎧","armor","rare",["metal","earth","guard"],{def:6, spd:-2, hp:10}, RARITY_MIN_LV.rare+2),
+      I("a3","聖堂騎士の胸当て","armor","epic",["holy","metal","light","guard"],{def:5, hp:8, mag:2}, RARITY_MIN_LV.epic+2),
+      I("a4","氷結のローブ","armor","rare",["ice","cloth","frost"],{def:3, mag:4, spd:1}, RARITY_MIN_LV.rare+2),
+      I("a5","影縫いの外套","armor","epic",["shadow","cloth","eclipse"],{def:3, spd:3, crt:3}, RARITY_MIN_LV.epic+4),
+      I("a6","竜炎の胸甲","armor","legend",["dragon","fire","metal","blaze"],{atk:4, def:4, hp:10}, 36),
+      I("a7","星屑の装束","armor","legend",["star","light","cloth","arcane"],{mag:6, spd:2, hp:6}, 40),
+      I("a8","機巧の装甲服","armor","rare",["tech","metal","pierce"],{def:4, spd:1, crt:2}, RARITY_MIN_LV.rare+4),
+      I("a9","熾天使の胸甲","armor","legend",["holy","light","metal","guard"],{def:5, hp:12, mag:2, crt:1}, 48),
+
+      // 祈り系
+      I("a10","聖痕の法衣","armor","epic",["stigma","holy","prayer","cloth","vigor"],{def:4, mag:4, hp:6}, 30),
+      I("a11","天翼の聖鎧","armor","legend",["angel","holy","light","metal","guard"],{def:6, hp:12, mag:2, crt:2}, 58),
+    ],
+    boots: [
+      I("b1","革靴","boots","common",["leather","swift"],{spd:2, def:1}, RARITY_MIN_LV.common),
+      I("b2","鉄のグリーヴ","boots","rare",["metal","earth","guard"],{def:3, spd:-1, hp:4}, RARITY_MIN_LV.rare+2),
+      I("b3","聖刻のブーツ","boots","epic",["holy","light","vigor"],{spd:2, hp:6, crt:1}, RARITY_MIN_LV.epic+2),
+      I("b4","霜踏みのブーツ","boots","rare",["ice","frost"],{spd:3, mag:1, def:1}, RARITY_MIN_LV.rare+3),
+      I("b5","影走り","boots","epic",["shadow","swift","eclipse"],{spd:5, crt:2, def:-1}, RARITY_MIN_LV.epic+5),
+      I("b6","竜翼のサンダル","boots","legend",["dragon","fire","swift"],{spd:4, atk:2, hp:2}, 34),
+      I("b7","月のスリッパ","boots","epic",["moon","ice","swift"],{spd:3, mag:2}, RARITY_MIN_LV.epic+4),
+      I("b8","整備士の安全靴","boots","common",["tech","metal"],{def:2, spd:1}, RARITY_MIN_LV.common+2),
+      I("b9","星道のブーツ","boots","legend",["star","light","swift","arcane"],{spd:3, mag:2, crt:1}, 38),
+      I("b10","巡礼の羽靴","boots","legend",["holy","light","vigor"],{spd:3, hp:6, mag:1}, 44),
+
+      // 祈り系
+      I("b11","聖痕のサンダル","boots","epic",["stigma","holy","prayer","swift"],{spd:4, mag:1, hp:4}, 32),
+      I("b12","天使の羽根靴","boots","legend",["angel","holy","light","swift","vigor"],{spd:4, hp:8, mag:1}, 56),
+    ],
+    sword: [
+      I("s1","木刀","sword","common",["wood","rage"],{atk:3, spd:1}, RARITY_MIN_LV.common),
+      I("s2","鉄のロングソード","sword","common",["metal","rage"],{atk:5}, RARITY_MIN_LV.common),
+      I("s3","氷刃","sword","rare",["ice","frost"],{atk:4, mag:2, crt:1}, RARITY_MIN_LV.rare+2),
+      I("s4","聖剣の欠片","sword","epic",["holy","light","focus"],{atk:5, mag:2, crt:2}, RARITY_MIN_LV.epic+2),
+      I("s5","影のレイピア","sword","rare",["shadow","swift","eclipse"],{atk:4, spd:3, crt:2}, RARITY_MIN_LV.rare+3),
+      I("s6","竜炎刀","sword","legend",["dragon","fire","blaze"],{atk:7, hp:4, crt:1}, 36),
+      I("s7","月光のサーベル","sword","epic",["moon","light","focus"],{atk:5, spd:2, crt:2}, RARITY_MIN_LV.epic+5),
+      I("s8","機巧のブレード","sword","rare",["tech","metal","pierce"],{atk:5, spd:1, crt:2}, RARITY_MIN_LV.rare+5),
+      I("s9","黒曜の刃","sword","epic",["shadow","earth","rage"],{atk:6, def:1, crt:1}, RARITY_MIN_LV.epic+4),
+      I("s10","大地割り","sword","rare",["earth","guard"],{atk:6, spd:-1, def:1}, RARITY_MIN_LV.rare+6),
+      I("s11","星喰いの剣","sword","legend",["star","shadow","arcane"],{atk:6, mag:4, crt:2}, 42),
+      I("s12","祈りの短剣","sword","common",["holy","vigor","prayer"],{atk:3, mag:1, spd:1}, RARITY_MIN_LV.common+1),
+      I("s13","審判の光剣","sword","legend",["holy","light","focus"],{atk:7, mag:3, crt:2}, 50),
+      I("s14","星核の細剣","sword","legend",["star","light","arcane","swift"],{atk:6, spd:2, mag:2, crt:2}, 46),
+
+      // 祈り系
+      I("s15","聖痕の剣尖","sword","epic",["stigma","holy","light","focus"],{atk:6, mag:3, crt:2}, 34),
+      I("s16","熾天のレリックブレード","sword","legend",["angel","holy","light","focus"],{atk:7, mag:4, crt:3}, 62),
+    ]
+  };
+
+  const bySlot = {
+    head: items.head,
+    armor: items.armor,
+    boots: items.boots,
+    left: items.sword,
+    right: items.sword,
+  };
+
+  const ALL_ITEMS = [...items.head, ...items.armor, ...items.boots, ...items.sword];
+  const ITEM_BY_ID = new Map(ALL_ITEMS.map(it => [it.id, it]));
+
+  // ---- 敵（Lv80まで用意） ----
+  function clamp(n, a, b){ return Math.max(a, Math.min(b, n)); }
+  function roll(n){ return Math.random()*n; }
+  function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+
+  function mkEnemy(id, name, lv, tags, mul, note){
+    const m = mul || {};
+    const hp = Math.round((26 + lv*12) * (m.hp||1));
+    const atk = Math.round((5 + lv*2.35) * (m.atk||1));
+    const def = Math.round((2 + lv*1.60) * (m.def||1));
+    const spd = Math.round((5 + lv*0.75) * (m.spd||1));
+    const mag = Math.round((lv*0.90) * (m.mag||1));
+    const crt = clamp(Math.round((3 + lv*0.35) * (m.crt||1)), 0, 25);
+    const xp = Math.round(12 + lv*11);
+    return { id, name, lv, tags, stats:{ hp, atk, def, spd, mag, crt }, xp, note };
+  }
+
+  const ENEMIES = [
+    mkEnemy("e01","木人",1,["wood"],{hp:0.9, atk:0.9, def:0.9, spd:0.9},"練習相手"),
+    mkEnemy("e03","氷スライム",3,["ice","moon"],{hp:1.0, mag:1.1},"凍結が地味に痛い"),
+    mkEnemy("e05","影の盗賊",5,["shadow","leather"],{spd:1.25, crt:1.2, hp:0.95},"回避が高い"),
+    mkEnemy("e07","聖堂の騎士",7,["holy","metal","light"],{def:1.25, hp:1.05},"硬い"),
+    mkEnemy("e09","岩のゴーレム",9,["earth","metal"],{def:1.35, hp:1.25, spd:0.85},"城塞"),
+    mkEnemy("e11","機巧兵",11,["tech","metal"],{atk:1.1, spd:1.15},"手数が多い"),
+    mkEnemy("e13","竜の幼体",13,["dragon","fire"],{atk:1.18, hp:1.15, mag:1.15},"火力勝負"),
+    mkEnemy("e15","星詠みの使い",15,["star","light"],{mag:1.35, spd:1.05},"魔法が重い"),
+    mkEnemy("e18","影縫いの執行者",18,["shadow","tech"],{atk:1.2, spd:1.2, crt:1.15},"暗号刃"),
+    mkEnemy("e20","氷冠の魔人",20,["ice","star"],{mag:1.35, def:1.1},"凍結と星弾"),
+    mkEnemy("e22","聖都の守護者",22,["holy","light","metal"],{def:1.25, hp:1.2},"盾が厚い"),
+    mkEnemy("e25","竜炎の戦鬼",25,["dragon","fire","metal"],{atk:1.35, hp:1.25},"踏み潰す"),
+    mkEnemy("e28","星屑の魔導機",28,["star","tech"],{mag:1.3, spd:1.15},"遠距離"),
+    mkEnemy("e30","熾天使の影",30,["holy","light","star"],{mag:1.25, def:1.25, hp:1.25},"長期戦"),
+    mkEnemy("e34","深層の氷竜",34,["dragon","ice"],{hp:1.35, atk:1.25, mag:1.35, spd:0.95},"凍土"),
+    mkEnemy("e38","黒曜の巨刃",38,["shadow","earth"],{atk:1.4, def:1.25, spd:0.95},"一撃が重い"),
+    mkEnemy("e42","機神の尖兵",42,["tech","metal","star"],{atk:1.25, spd:1.25, def:1.15},"機構"),
+    mkEnemy("e46","竜王の眷属",46,["dragon","fire","star"],{atk:1.45, hp:1.35, mag:1.25},"灼熱"),
+    mkEnemy("e50","大聖堂の審判",50,["holy","light","metal"],{def:1.45, hp:1.35, atk:1.25},"裁き"),
+    mkEnemy("e55","星喰いの影",55,["star","shadow"],{mag:1.55, spd:1.2, crt:1.1},"星喰い"),
+    mkEnemy("e60","竜冠の暴君",60,["dragon","fire"],{atk:1.65, hp:1.55, def:1.2},"無理ゲー入口"),
+    mkEnemy("e70","光輪の熾天使",70,["holy","light","star","angel"],{def:1.6, hp:1.55, mag:1.45},"まだ早い"),
+    mkEnemy("e80","星滅の審判者",80,["star","holy","tech","angel"],{hp:1.75, atk:1.55, def:1.55, mag:1.75, spd:1.15},"倒せたら伝説"),
+  ];
+
+  // ---- UI参照 ----
+  const elStatGrid = document.getElementById("statGrid");
+  const elSlotGrid = document.getElementById("slotGrid");
+  const elTagSummary = document.getElementById("tagSummary");
+  const elSetSummary = document.getElementById("setSummary");
+  const elSetDetails = document.getElementById("setDetails");
+  const elBaseTag = document.getElementById("baseTag");
+
+  const elComboCount = document.getElementById("comboCount");
+  const elResults = document.getElementById("results");
+  const elResultMeta = document.getElementById("resultMeta");
+  const elMin = {
+    atk: document.getElementById("minAtk"),
+    def: document.getElementById("minDef"),
+    spd: document.getElementById("minSpd"),
+    hp: document.getElementById("minHp"),
+    mag: document.getElementById("minMag"),
+    crt: document.getElementById("minCrt"),
+  };
+  const elTextQuery = document.getElementById("textQuery");
+  const elMustTags = document.getElementById("mustTags");
+  const elBanTags = document.getElementById("banTags");
+  const elSortBy = document.getElementById("sortBy");
+  const elLimit = document.getElementById("limit");
+  const elSearchAll = document.getElementById("searchAllItems");
+
+  const elLog = document.getElementById("log");
+  const elAutoState = document.getElementById("autoState");
+
+  const elYouLv = document.getElementById("youLv");
+  const elYouExp = document.getElementById("youExp");
+  const elYouExpNext = document.getElementById("youExpNext");
+  const elYouExpBar = document.getElementById("youExpBar");
+
+  const elYouHp = document.getElementById("youHp");
+  const elYouHpMax = document.getElementById("youHpMax");
+  const elYouHpBar = document.getElementById("youHpBar");
+  const elYouSummary = document.getElementById("youSummary");
+
+  const elEnemySelect = document.getElementById("enemySelect");
+  const elFoeName = document.getElementById("foeName");
+  const elFoeLv = document.getElementById("foeLv");
+  const elFoeHp = document.getElementById("foeHp");
+  const elFoeHpMax = document.getElementById("foeHpMax");
+  const elFoeHpBar = document.getElementById("foeHpBar");
+  const elFoeSummary = document.getElementById("foeSummary");
+
+  const elLootLine = document.getElementById("lootLine");
+  const elInvList = document.getElementById("invList");
+  const elInvMeta = document.getElementById("invMeta");
+  const elInvCount = document.getElementById("invCount");
+  const elInvMissing = document.getElementById("invMissing");
+
+  // Canvas
+  const canvas = document.getElementById("battleCanvas");
+  const ctx = canvas.getContext("2d");
+
+  // ---- 状態 ----
+  const state = {
+    equip: { head: null, armor: null, boots: null, left: null, right: null },
+    inventory: new Set(),
+    lastResults: [],
+    player: { lv: 1, exp: 0, hp: 1, phoenixUsed: false },
+    foe: { id: ENEMIES[0].id, hp: 1 },
+    auto: { running: false, timer: null },
+    lastLoot: null,
+    fx: { queue: [], floats: [], shake: 0, lastT: 0 },
+  };
+
+  // ---- 共通 ----
+  function sumStats(...parts){
+    const out = { atk:0, def:0, spd:0, hp:0, mag:0, crt:0 };
+    for (const p of parts){
+      if (!p) continue;
+      for (const k of STAT_KEYS) out[k] += (p[k]||0);
+    }
+    return out;
+  }
+
+  function rarityColor(r){
+    if (r === "legend") return "rgba(242,193,78,.9)";
+    if (r === "epic") return "rgba(116,192,252,.9)";
+    if (r === "rare") return "rgba(121,211,154,.9)";
+    return "rgba(255,255,255,.7)";
+  }
+
+  function fmtStats(s){
+    const parts = [];
+    for (const k of STAT_KEYS){
+      const v = s[k];
+      if (!v) continue;
+      parts.push(`${STAT_LABEL[k]} ${v>0?"+":""}${v}`);
+    }
+    return parts.length ? parts.join(" / ") : "(補正なし)";
+  }
+
+  const TAG_ALIASES = {
+    "聖痕":"stigma",
+    "すてぃぐま":"stigma",
+    "stigmata":"stigma",
+    "天使":"angel",
+    "熾天":"angel",
+    "熾天使":"angel",
+    "祈り":"prayer",
+    "いのり":"prayer",
+    "prayer":"prayer",
+    "祝福":"holy",
+    "聖":"holy",
+    "光":"light",
+  };
+
+  function normalizeTag(t){
+    if (!t) return t;
+    const raw = t.trim();
+    if (!raw) return "";
+    if (TAG_ALIASES[raw]) return TAG_ALIASES[raw];
+    const low = raw.toLowerCase();
+    if (TAG_ALIASES[low]) return TAG_ALIASES[low];
+    return low;
+  }
+
+  function parseTags(input){
+    return (input||"")
+      .split(/[\s,，]+/)
+      .map(x=>x.trim())
+      .filter(Boolean)
+      .map(x=>normalizeTag(x))
+      .filter(Boolean);
+  }
+
+  function tagString(map){
+    const arr = [...map.entries()].sort((a,b)=>b[1]-a[1]).map(([t,c])=>c>1?`${t}×${c}`:t);
+    return arr.length ? arr.join(", ") : "(なし)";
+  }
+
+  function addInto(dst, src){ for (const k of Object.keys(src)) dst[k] += src[k]; }
+
+  function addMods(dst, src){
+    for (const [k,v] of Object.entries(src)){
+      if (typeof v === "number") dst[k] = (dst[k]||0) + v;
+      else if (typeof v === "boolean") dst[k] = (dst[k]||false) || v;
+    }
+  }
+
+  function tagsFrom(itemsList){
+    const m = new Map();
+    for (const it of itemsList){
+      for (const t of it.tags) m.set(t, (m.get(t)||0)+1);
+    }
+    return m;
+  }
+
+  function legendTagsFrom(itemsList){
+    const m = new Map();
+    for (const it of itemsList){
+      if (it.rarity !== "legend") continue;
+      for (const t of it.tags) m.set(t, (m.get(t)||0)+1);
+    }
+    return m;
+  }
+
+  function hasAllItems(buildItems, reqIds){
+    const set = new Set(buildItems.map(x=>x.id));
+    for (const id of reqIds) if (!set.has(id)) return false;
+    return true;
+  }
+
+  function computeSynergy(buildItems){
+    const tagMap = tagsFrom(buildItems);
+    const legMap = legendTagsFrom(buildItems);
+
+    const statBonus = { atk:0, def:0, spd:0, hp:0, mag:0, crt:0 };
+    const mods = {
+      extraSwings: 0,
+      fireProcChance: 0,
+      arcaneProcChance: 0,
+      freezeChance: 0,
+      rootChance: 0,
+      lifesteal: 0,
+      dodgeBonus: 0,
+      armorPen: 0,
+      drPct: 0,
+      foeSlow: 0,
+      healBoost: 0,
+      backstab: 0,
+      holySmiteChance: 0,
+      starfall: false,
+      starfallChance: 0,
+      phoenix: false,
+      angelGuard: 0,
+    };
+
+    const active2 = [];
+    const active3 = [];
+    const activeCombo = [];
+    const activeSpecial = [];
+
+    let scoreBonus = 0;
+
+    for (const [tag, cfg] of Object.entries(SET2)){
+      if ((tagMap.get(tag)||0) >= 2){
+        active2.push({ tag, ...cfg, kind:"tag2" });
+        scoreBonus += (cfg.score||0);
+        if (cfg.statBonus) addInto(statBonus, cfg.statBonus);
+        if (cfg.mods) addMods(mods, cfg.mods);
+      }
+    }
+
+    for (const [tag, cfg] of Object.entries(SET3_LEGEND)){
+      if ((legMap.get(tag)||0) >= 3){
+        active3.push({ tag, ...cfg, kind:"legend3" });
+        scoreBonus += (cfg.score||0);
+        if (cfg.statBonus) addInto(statBonus, cfg.statBonus);
+        if (cfg.mods) addMods(mods, cfg.mods);
+      }
+    }
+
+    for (const cfg of COMBO_TAG_SETS){
+      const ok = cfg.tags.every(t => (tagMap.get(t)||0) >= (cfg.each||1));
+      if (!ok) continue;
+      activeCombo.push({ ...cfg, kind:"combo" });
+      scoreBonus += (cfg.score||0);
+      if (cfg.statBonus) addInto(statBonus, cfg.statBonus);
+      if (cfg.mods) addMods(mods, cfg.mods);
+    }
+
+    for (const cfg of SPECIAL_ITEM_SETS){
+      if (!hasAllItems(buildItems, cfg.requires)) continue;
+      activeSpecial.push({ ...cfg, kind:"special" });
+      scoreBonus += (cfg.score||0);
+      if (cfg.statBonus) addInto(statBonus, cfg.statBonus);
+      if (cfg.mods) addMods(mods, cfg.mods);
+    }
+
+    mods.extraSwings = clamp(mods.extraSwings, 0, 2);
+    mods.fireProcChance = clamp(mods.fireProcChance, 0, 0.85);
+    mods.arcaneProcChance = clamp(mods.arcaneProcChance, 0, 0.70);
+    mods.freezeChance = clamp(mods.freezeChance, 0, 0.30);
+    mods.rootChance = clamp(mods.rootChance, 0, 0.25);
+    mods.lifesteal = clamp(mods.lifesteal, 0, 0.20);
+    mods.dodgeBonus = clamp(mods.dodgeBonus, 0, 35);
+    mods.armorPen = clamp(mods.armorPen, 0, 6);
+    mods.drPct = clamp(mods.drPct, 0, 0.35);
+    mods.foeSlow = clamp(mods.foeSlow, 0, 2);
+    mods.healBoost = clamp(mods.healBoost, 0, 0.60);
+    mods.backstab = clamp(mods.backstab, 0, 0.40);
+    mods.holySmiteChance = clamp(mods.holySmiteChance, 0, 0.70);
+    mods.starfallChance = clamp(mods.starfallChance, 0, 0.65);
+    mods.angelGuard = clamp(mods.angelGuard, 0, 0.35);
+
+    if (mods.starfallChance > 0 && roll(1) < mods.starfallChance) mods.starfall = true;
+
+    return { tagMap, legMap, active2, active3, activeCombo, activeSpecial, statBonus, mods, scoreBonus };
+  }
+
+  function expToNext(lv){ return Math.floor(18 + lv*10 + lv*lv*2); }
+
+  function levelBonus(lv){
+    const d = Math.max(0, lv-1);
+    return { atk: d*1, def: d*1, spd: Math.floor(d/3), hp: d*8, mag: Math.floor(d/2), crt: Math.floor(d/4) };
+  }
+
+  function baseAtLevel(lv){
+    const b = { ...baseLv1 };
+    const add = levelBonus(lv);
+    for (const k of STAT_KEYS) b[k] += (add[k]||0);
+    return b;
+  }
+
+  function equipItems(){ return SLOTS.map(s => state.equip[s.key]).filter(Boolean); }
+
+  function ownedBySlot(slotKey){
+    const list = bySlot[slotKey];
+    return list.filter(it => state.inventory.has(it.id));
+  }
+
+  function computeTotalForCurrent(){
+    const base = baseAtLevel(state.player.lv);
+    const eq = equipItems();
+    const addEquip = sumStats(...eq.map(x=>x.stats));
+    const syn = computeSynergy(eq);
+
+    const tot = { ...base };
+    for (const k of STAT_KEYS) tot[k] += addEquip[k] + syn.statBonus[k];
+
+    tot.spd = Math.max(1, tot.spd);
+    tot.crt = clamp(tot.crt, 0, 85);
+    tot.hp = Math.max(1, tot.hp);
+
+    return { base, addEquip, setBonus: syn.statBonus, tot, syn };
+  }
+
+  function powerScore(tot, syn){
+    const w = { atk: 2.0, def: 1.5, spd: 1.4, hp: 0.35, mag: 1.6, crt: 1.2 };
+    let s = 0;
+    for (const k of STAT_KEYS) s += tot[k] * w[k];
+
+    let tiny = 0;
+    for (const [,c] of syn.tagMap.entries()) if (c >= 2) tiny += 1.2*(c-1);
+
+    const modBonus = syn.scoreBonus
+      + (syn.mods.extraSwings||0) * 10
+      + (syn.mods.fireProcChance||0) * 10
+      + (syn.mods.arcaneProcChance||0) * 10
+      + (syn.mods.lifesteal||0) * 18
+      + (syn.mods.drPct||0) * 18
+      + (syn.mods.armorPen||0) * 2
+      + (syn.mods.angelGuard||0) * 18;
+
+    return s + tiny + modBonus;
+  }
+
+  function renderStats(){
+    const { base, addEquip, setBonus, tot, syn } = computeTotalForCurrent();
+
+    elStatGrid.innerHTML = "";
+    for (const k of STAT_KEYS){
+      const box = document.createElement("div");
+      box.className = "stat";
+      const delta = addEquip[k] + setBonus[k];
+      box.innerHTML = `
+        <div class="k">${STAT_LABEL[k]}</div>
+        <div class="v">${tot[k]} <span style="color:var(--muted); font-size:12px;">(${delta>=0?"+":""}${delta})</span></div>
+      `;
+      elStatGrid.appendChild(box);
+    }
+
+    elTagSummary.textContent = tagString(syn.tagMap);
+
+    const s2 = syn.active2.map(x=>x.name).join(" / ");
+    const s3 = syn.active3.map(x=>x.name).join(" / ");
+    const sc = syn.activeCombo.map(x=>x.name).join(" / ");
+    const ss = syn.activeSpecial.map(x=>x.name).join(" / ");
+
+    const parts = [];
+    if (ss) parts.push(ss);
+    if (sc) parts.push(sc);
+    if (s3) parts.push(s3);
+    if (s2) parts.push(s2);
+
+    elSetSummary.textContent = parts.length ? parts.join(" / ") : "(なし)";
+
+    const lines = [];
+    if (syn.activeSpecial.length){
+      lines.push("[特定装備] " + syn.activeSpecial.map(x=>`${x.name}: ${x.desc}`).join(" | "));
+    }
+    if (syn.activeCombo.length){
+      lines.push("[複合タグ] " + syn.activeCombo.map(x=>`${x.name}: ${x.desc}`).join(" | "));
+    }
+    if (syn.active3.length){
+      lines.push("[3点(レジェンド)] " + syn.active3.map(x=>`${x.name}: ${x.desc}`).join(" | "));
+    }
+    if (syn.active2.length){
+      lines.push("[2点] " + syn.active2.map(x=>`${x.name}: ${x.desc}`).join(" | "));
+    }
+    elSetDetails.textContent = lines.length ? lines.join("\n") : "セット効果なし。";
+
+    elBaseTag.textContent = `ATK ${base.atk} / DEF ${base.def} / SPD ${base.spd} / HP ${base.hp} / MAG ${base.mag} / CRT ${base.crt}`;
+
+    syncPlayerHP();
+    renderArena();
+    renderBattleCanvas();
+    saveGame();
+  }
+
+  function renderSlots(){
+    elSlotGrid.innerHTML = "";
+
+    for (const s of SLOTS){
+      const wrap = document.createElement("div");
+      wrap.className = "slot";
+
+      const top = document.createElement("div");
+      top.className = "slotTop";
+      top.innerHTML = `<div class="slotName">${s.label}</div><div class="mini" id="picked_${s.key}"></div>`;
+
+      const sel = document.createElement("select");
+      sel.id = `sel_${s.key}`;
+
+      const opt0 = document.createElement("option");
+      opt0.value = "";
+      opt0.textContent = "(外す)";
+      sel.appendChild(opt0);
+
+      const list = ownedBySlot(s.key);
+      for (const it of list){
+        const o = document.createElement("option");
+        o.value = it.id;
+        o.textContent = `${it.name}  [${it.rarity}]`;
+        sel.appendChild(o);
+      }
+
+      sel.addEventListener("change", () => {
+        const id = sel.value;
+        state.equip[s.key] = id ? ITEM_BY_ID.get(id) : null;
+        state.player.phoenixUsed = false;
+        updatePickedLine(s.key);
+        renderStats();
+      });
+
+      const details = document.createElement("div");
+      details.className = "itemLine";
+      details.id = `detail_${s.key}`;
+
+      wrap.appendChild(top);
+      wrap.appendChild(sel);
+      wrap.appendChild(details);
+      elSlotGrid.appendChild(wrap);
+
+      if (state.equip[s.key]) sel.value = state.equip[s.key].id;
+      updatePickedLine(s.key);
+    }
+  }
+
+  function updatePickedLine(slotKey){
+    const it = state.equip[slotKey];
+    const picked = document.getElementById(`picked_${slotKey}`);
+    const detail = document.getElementById(`detail_${slotKey}`);
+
+    if (!it){
+      picked.textContent = "(未装備)";
+      detail.innerHTML = "";
+      return;
+    }
+
+    picked.innerHTML = `<span style="color:${rarityColor(it.rarity)}">●</span> ${fmtStats(it.stats)} <span class="mini" style="margin-left:6px;">minLv ${it.minDropLv}</span>`;
+
+    const chips = [];
+    chips.push(`<span class="chip" style="color:${rarityColor(it.rarity)}">${it.rarity}</span>`);
+    for (const t of it.tags) chips.push(`<span class="chip">${t}</span>`);
+    chips.push(`<span class="chip" style="font-family:var(--mono)">${fmtStats(it.stats)}</span>`);
+    chips.push(`<span class="chip">dropLv≥${it.minDropLv}</span>`);
+    detail.innerHTML = chips.join("");
+  }
+
+  function renderInventory(){
+    const owned = [...state.inventory].map(id => ITEM_BY_ID.get(id)).filter(Boolean);
+    owned.sort((A,B) => {
+      const ord = (x) => x.rarity === "legend" ? 3 : x.rarity === "epic" ? 2 : x.rarity === "rare" ? 1 : 0;
+      if (ord(B) !== ord(A)) return ord(B) - ord(A);
+      if (B.minDropLv !== A.minDropLv) return B.minDropLv - A.minDropLv;
+      return A.name.localeCompare(B.name);
+    });
+
+    const total = ALL_ITEMS.length;
+    const have = owned.length;
+
+    elInvMeta.textContent = `${have}個`;
+    elInvCount.textContent = `${have} / ${total}`;
+    elInvMissing.textContent = `${Math.max(0, total - have)}`;
+
+    elInvList.innerHTML = "";
+
+    if (!owned.length){
+      const d = document.createElement("div");
+      d.className = "hint";
+      d.textContent = "所持品がない。ニューゲームで初期装備を付与します。";
+      elInvList.appendChild(d);
+      return;
+    }
+
+    for (const it of owned){
+      const row = document.createElement("div");
+      row.className = "invItem";
+      row.innerHTML = `
+        <div style="min-width:0;">
+          <div style="font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+            <span style="color:${rarityColor(it.rarity)}">●</span> ${it.name}
+          </div>
+          <div class="mini" style="margin-top:4px;">${it.slot} / ${it.tags.join(", ") || "(タグなし)"} / dropLv≥${it.minDropLv}</div>
+        </div>
+        <div class="mini" style="font-family:var(--mono); text-align:right;">${fmtStats(it.stats)}</div>
+      `;
+      elInvList.appendChild(row);
+    }
+  }
+
+  // ---- 敵 ----
+  function renderEnemySelect(){
+    elEnemySelect.innerHTML = "";
+    const groups = [
+      { label: "Lv 1-10", min: 1, max: 10 },
+      { label: "Lv 11-20", min: 11, max: 20 },
+      { label: "Lv 21-30", min: 21, max: 30 },
+      { label: "Lv 31-40", min: 31, max: 40 },
+      { label: "Lv 41-50", min: 41, max: 50 },
+      { label: "Lv 51+", min: 51, max: 999 },
+    ];
+
+    for (const g of groups){
+      const og = document.createElement("optgroup");
+      og.label = g.label;
+      const list = ENEMIES.filter(e => e.lv >= g.min && e.lv <= g.max);
+      for (const e of list){
+        const o = document.createElement("option");
+        o.value = e.id;
+        o.textContent = `Lv${e.lv} ${e.name} (${e.note})`;
+        og.appendChild(o);
+      }
+      if (og.children.length) elEnemySelect.appendChild(og);
+    }
+
+    elEnemySelect.value = state.foe.id;
+  }
+
+  function getEnemy(id){ return ENEMIES.find(x=>x.id===id) || ENEMIES[0]; }
+
+  function foeStatsFromTemplate(t){
+    const jitter = () => (roll(5) - 2);
+    return {
+      hp: Math.max(1, Math.floor(t.stats.hp + jitter()*2)),
+      atk: Math.max(1, Math.floor(t.stats.atk + jitter())),
+      def: Math.max(0, Math.floor(t.stats.def + jitter())),
+      spd: Math.max(1, Math.floor(t.stats.spd + jitter())),
+      mag: Math.max(0, Math.floor(t.stats.mag + jitter())),
+      crt: clamp(Math.floor(t.stats.crt + jitter()), 0, 25),
+    };
+  }
+
+  function spawnEnemy(){
+    const id = elEnemySelect.value || ENEMIES[0].id;
+    state.foe.id = id;
+    const t = getEnemy(id);
+    const st = foeStatsFromTemplate(t);
+    state.foe.hp = st.hp;
+    state.foe._max = st.hp;
+    state.foe._stats = st;
+    log(`敵出現: ${t.name} (Lv${t.lv})`, "spawn");
+    pushFX({ kind:"spawn" });
+    renderArena();
+    renderBattleCanvas();
+    saveGame();
+  }
+
+  function syncPlayerHP(){
+    const { tot } = computeTotalForCurrent();
+    const p = state.player;
+    const oldMax = p._max || p.hp;
+    p._max = tot.hp;
+    if (p.hp > p._max) p.hp = p._max;
+    if (p.hp > 0 && p._max > oldMax) p.hp = clamp(p.hp + Math.floor((p._max-oldMax)*0.5), 1, p._max);
+  }
+
+  function renderArena(){
+    const p = state.player;
+    const next = expToNext(p.lv);
+
+    const { tot, syn } = computeTotalForCurrent();
+
+    elYouLv.textContent = p.lv;
+    elYouExp.textContent = p.exp;
+    elYouExpNext.textContent = next;
+    elYouExpBar.style.width = `${clamp((p.exp/next)*100, 0, 100)}%`;
+
+    elYouHp.textContent = p.hp;
+    elYouHpMax.textContent = p._max || tot.hp;
+    elYouHpBar.style.width = `${clamp(((p.hp||0)/(p._max||1))*100, 0, 100)}%`;
+
+    const ps = powerScore(tot, syn);
+    const shortTags = tagString(syn.tagMap);
+    const set2 = syn.active2.map(x=>x.name).join(" / ") || "(なし)";
+    const set3 = syn.active3.map(x=>x.name).join(" / ") || "(なし)";
+    const combo = syn.activeCombo.map(x=>x.name).join(" / ") || "(なし)";
+    const spec = syn.activeSpecial.map(x=>x.name).join(" / ") || "(なし)";
+
+    const guardLine = syn.mods.angelGuard ? ` / 加護 ${(syn.mods.angelGuard*100).toFixed(0)}%` : "";
+
+    elYouSummary.innerHTML = `Power ${ps.toFixed(1)} / ${STAT_LABEL.atk} ${tot.atk}, ${STAT_LABEL.def} ${tot.def}, ${STAT_LABEL.spd} ${tot.spd}, ${STAT_LABEL.hp} ${tot.hp}, ${STAT_LABEL.mag} ${tot.mag}, ${STAT_LABEL.crt} ${tot.crt}${guardLine}<br/>タグ: ${shortTags}<br/>特定装備: ${spec}<br/>複合タグ: ${combo}<br/>タグ(2): ${set2}<br/>レジェンド(3): ${set3}`;
+
+    const t = getEnemy(state.foe.id);
+    const st = state.foe._stats || foeStatsFromTemplate(t);
+    const max = state.foe._max || st.hp;
+    const hp = state.foe.hp || 0;
+
+    elFoeName.textContent = t.name;
+    elFoeLv.textContent = t.lv;
+    elFoeHp.textContent = hp;
+    elFoeHpMax.textContent = max;
+    elFoeHpBar.style.width = `${clamp((hp/max)*100, 0, 100)}%`;
+
+    const foeTags = (t.tags||[]).join(", ") || "(なし)";
+
+    // ドロップ傾向を表示
+    const rule = dropTierForLevel(t.lv);
+    const tierLine = `drop: ${rule.allowed.join("/")}, legend率~${Math.round(rule.pLegend*100)}%`;
+
+    elFoeSummary.innerHTML = `報酬EXP: ${t.xp} / タグ傾向: ${foeTags}<br/>想定: HP ${st.hp}, ATK ${st.atk}, DEF ${st.def}, SPD ${st.spd}<br/>${tierLine}`;
+
+    renderInventory();
+  }
+
+  // ---- ログ + FX ----
+  function log(msg, type){
+    const time = new Date();
+    const hh = String(time.getHours()).padStart(2,"0");
+    const mm = String(time.getMinutes()).padStart(2,"0");
+    const line = `[${hh}:${mm}] ${msg}`;
+    const div = document.createElement("div");
+    div.textContent = line;
+    elLog.appendChild(div);
+    elLog.scrollTop = elLog.scrollHeight;
+
+    // FX
+    if (type === "p_hit") pushFX({ kind:"p_hit" });
+    if (type === "e_hit") pushFX({ kind:"e_hit" });
+    if (type === "p_miss") pushFX({ kind:"p_miss" });
+    if (type === "e_miss") pushFX({ kind:"e_miss" });
+    if (type === "fire") pushFX({ kind:"fire" });
+    if (type === "arc") pushFX({ kind:"arc" });
+    if (type === "smite") pushFX({ kind:"smite" });
+    if (type === "heal") pushFX({ kind:"heal" });
+    if (type === "angel") pushFX({ kind:"angel" });
+    if (type === "defeat") pushFX({ kind:"defeat" });
+    if (type === "victory") pushFX({ kind:"victory" });
+    if (type === "spawn") pushFX({ kind:"spawn" });
+  }
+
+  function pushFX(ev){
+    const now = performance.now();
+    state.fx.queue.push({ ...ev, t0: now });
+    if (ev.dmg){
+      const isFoe = ev.side === "foe";
+      const x = isFoe ? 640 : 220;
+      const y = 90;
+      state.fx.floats.push({ x, y, vy: -0.25, life: 900, t0: now, text: String(ev.dmg), isFoe });
+    }
+    state.fx.shake = 10;
+  }
+
+  // ---- バトル（ルール） ----
+  function calcSwings(playerSpd, foeSpd, extra){
+    const diff = playerSpd - foeSpd;
+    const base = 1 + Math.floor(diff / 8);
+    return clamp(base + (extra||0), 1, 4);
+  }
+
+  function calcFoeActs(foeSpd, playerSpd){
+    const diff = foeSpd - playerSpd;
+    const base = (diff >= 6) ? 2 : 1;
+    return clamp(base, 1, 2);
+  }
+
+  function fightRound(){
+    const p = state.player;
+    if (p.hp <= 0){ log("あなたは倒れている。祈りで立て直そう。", "defeat"); return; }
+
+    const t = getEnemy(state.foe.id);
+    if (!state.foe._stats || !state.foe._max){ spawnEnemy(); }
+
+    if (state.foe.hp <= 0){ log("敵はすでに倒れている。敵を出現し直そう。", "spawn"); return; }
+
+    const { tot, syn } = computeTotalForCurrent();
+    const mods = syn.mods;
+
+    const foe = { ...state.foe._stats };
+    foe.spd = Math.max(1, foe.spd - (mods.foeSlow||0));
+
+    const youInit = tot.spd + roll(6);
+    const foeInit = foe.spd + roll(6);
+    const youFirst = youInit >= foeInit;
+
+    const swings = calcSwings(tot.spd, foe.spd, mods.extraSwings);
+    let foeSkip = 0;
+
+    for (let i=0;i<swings;i++){
+      if (state.foe.hp <= 0) break;
+
+      const crit = (roll(100) < clamp(tot.crt, 0, 85));
+      const magPart = tot.mag * 0.25;
+      const dmgBase = tot.atk + magPart + roll(5);
+      const mitig = Math.max(0, (foe.def * 0.85) + roll(3) - (mods.armorPen||0));
+      let dmg = Math.max(1, Math.floor(dmgBase - mitig));
+
+      if (youFirst && mods.backstab) dmg = Math.floor(dmg * (1 + mods.backstab));
+      if (crit) dmg = Math.floor(dmg * 1.6);
+
+      state.foe.hp -= dmg;
+      log(`あなたの攻撃${crit?"(CRT)":""}: ${dmg} ダメージ`, "p_hit");
+      pushFX({ kind:"hit", side:"foe", dmg });
+
+      if (mods.lifesteal > 0 && dmg >= 6){
+        const heal = Math.max(1, Math.floor(dmg * mods.lifesteal * (1 + (mods.healBoost||0))));
+        p.hp = clamp(p.hp + heal, 1, p._max);
+        log(`祝福回復: +${heal} HP`, "heal");
+        pushFX({ kind:"healnum", side:"you", dmg: heal });
+      }
+
+      if (mods.holySmiteChance > 0 && roll(1) < mods.holySmiteChance){
+        const sm = Math.max(1, Math.floor(tot.mag * 0.95 + roll(7)));
+        state.foe.hp -= sm;
+        log(`聖撃: ${sm} 追加ダメージ`, "smite");
+        pushFX({ kind:"hit", side:"foe", dmg: sm });
+      }
+
+      if (mods.fireProcChance > 0 && roll(1) < mods.fireProcChance){
+        const fb = Math.max(1, Math.floor(tot.mag * 1.15 + tot.atk*0.22 + roll(8)));
+        state.foe.hp -= fb;
+        log(`ファイア追撃: ${fb} 追加ダメージ`, "fire");
+        pushFX({ kind:"hit", side:"foe", dmg: fb });
+      }
+
+      if (mods.arcaneProcChance > 0 && roll(1) < mods.arcaneProcChance){
+        const ab = Math.max(1, Math.floor(tot.mag * 1.25 + roll(7)));
+        state.foe.hp -= ab;
+        log(`星弾: ${ab} 追加ダメージ`, "arc");
+        pushFX({ kind:"hit", side:"foe", dmg: ab });
+      }
+
+      if (mods.starfall && roll(1) < 0.55){
+        const sf = Math.max(1, Math.floor(tot.mag * 1.65 + roll(10)));
+        state.foe.hp -= sf;
+        log(`星落とし: ${sf} 追加ダメージ`, "arc");
+        pushFX({ kind:"hit", side:"foe", dmg: sf });
+      }
+
+      if (mods.freezeChance > 0 && roll(1) < mods.freezeChance){ foeSkip += 1; log("霜縛り: 敵の動きが止まった。", "p_miss"); }
+      if (mods.rootChance > 0 && roll(1) < mods.rootChance){ foeSkip += 1; log("木霊: 敵が根を張って動けない。", "p_miss"); }
+    }
+
+    if (state.foe.hp <= 0){
+      state.foe.hp = 0;
+      log(`${t.name} を倒した。`, "victory");
+      onVictory(t);
+      renderArena();
+      renderStats();
+      return;
+    }
+
+    let foeActs = calcFoeActs(foe.spd, tot.spd);
+    foeActs = Math.max(0, foeActs - foeSkip);
+
+    for (let i=0;i<foeActs;i++){
+      if (p.hp <= 0) break;
+
+      const crit = (roll(100) < clamp(foe.crt||0, 0, 25));
+      const dmgBase = foe.atk + (foe.mag||0)*0.2 + roll(6);
+      const mitig = tot.def * 0.9 + roll(3);
+      let dmg = Math.max(1, Math.floor(dmgBase - mitig));
+
+      if (crit) dmg = Math.floor(dmg * 1.4);
+      if (mods.drPct > 0) dmg = Math.max(1, Math.floor(dmg * (1 - mods.drPct)));
+
+      // 天使の加護: 被ダメ軽減
+      if (mods.angelGuard > 0 && roll(1) < mods.angelGuard){
+        dmg = Math.max(1, Math.floor(dmg * 0.65));
+        log("天使の加護: 被ダメ軽減。", "angel");
+      }
+
+      const baseDodge = clamp((tot.spd - foe.spd) * 2, 0, 25);
+      const dodge = clamp(baseDodge + (mods.dodgeBonus||0), 0, 60);
+      if (roll(100) < dodge){ log("あなたは回避した。", "e_miss"); continue; }
+
+      p.hp -= dmg;
+      log(`${t.name} の攻撃${crit?"(CRT)":""}: ${dmg} ダメージ`, "e_hit");
+      pushFX({ kind:"hit", side:"you", dmg });
+    }
+
+    if (p.hp <= 0){
+      p.hp = 0;
+      if (mods.phoenix && !p.phoenixUsed){
+        p.phoenixUsed = true;
+        const revive = Math.max(1, Math.floor(p._max * 0.42));
+        p.hp = revive;
+        log("天軍: 1度だけ復活した。", "heal");
+        pushFX({ kind:"healnum", side:"you", dmg: revive });
+      } else {
+        log("あなたは倒れた。EXPを少し失った。祈りで復帰できる。", "defeat");
+        onDefeat(t);
+      }
+    }
+
+    renderArena();
+    renderBattleCanvas();
+    saveGame();
+  }
+
+  function onVictory(enemy){
+    const p = state.player;
+    const base = enemy.xp;
+    const diff = enemy.lv - p.lv;
+    const bonus = diff >= 0 ? Math.floor(diff*6) : Math.floor(diff*2);
+    const gain = Math.max(6, base + bonus);
+    addExp(gain);
+
+    const loot = rollLoot(enemy);
+    if (loot){
+      const wasNew = !state.inventory.has(loot.id);
+      if (wasNew){
+        state.inventory.add(loot.id);
+        state.lastLoot = loot;
+        elLootLine.innerHTML = `ドロップ: <span style="color:${rarityColor(loot.rarity)}">●</span> <b>${loot.name}</b> [${loot.rarity}] (dropLv≥${loot.minDropLv})`;
+        log(`入手: ${loot.name} [${loot.rarity}]`, "victory");
+      } else {
+        const dupExp = Math.max(2, Math.floor(enemy.xp * 0.12));
+        state.lastLoot = loot;
+        elLootLine.innerHTML = `ドロップ: <span style="color:${rarityColor(loot.rarity)}">●</span> ${loot.name} [重複] → EXP +${dupExp}`;
+        log(`重複ドロップ: ${loot.name} → EXP +${dupExp}`, "victory");
+        addExp(dupExp);
+      }
+      renderSlots();
+    }
+
+    saveGame();
+  }
+
+  function onDefeat(){
+    const p = state.player;
+    const lose = Math.max(4, Math.floor(expToNext(p.lv) * 0.12));
+    p.exp = Math.max(0, p.exp - lose);
+    p.phoenixUsed = false;
+    saveGame();
+  }
+
+  function addExp(n){
+    const p = state.player;
+    p.exp += Math.max(0, Math.floor(n));
+
+    let leveled = 0;
+    while (p.exp >= expToNext(p.lv)){
+      p.exp -= expToNext(p.lv);
+      p.lv += 1;
+      leveled += 1;
+    }
+
+    if (leveled > 0){
+      log(`レベルアップ: Lv${p.lv} (+${leveled})`, "victory");
+      const { tot } = computeTotalForCurrent();
+      p._max = tot.hp;
+      p.hp = p._max;
+      p.phoenixUsed = false;
+      pushFX({ kind:"level" });
+    }
+  }
+
+  function heal(){
+    const p = state.player;
+    const { tot, syn } = computeTotalForCurrent();
+    const mods = syn.mods;
+
+    const amount = Math.max(8, Math.floor(tot.mag*1.1) + 10);
+    const boosted = Math.floor(amount * (1 + (mods.healBoost||0)));
+    if (p.hp <= 0) p.hp = 1;
+    p.hp = clamp(p.hp + boosted, 1, p._max);
+    log(`祈り: +${boosted} HP`, "heal");
+    pushFX({ kind:"healnum", side:"you", dmg: boosted });
+    renderArena();
+    renderBattleCanvas();
+    saveGame();
+  }
+
+  function autoFightToggle(){
+    if (state.auto.running){ stopAuto(); return; }
+    state.auto.running = true;
+    elAutoState.textContent = "自動";
+
+    const step = () => {
+      if (!state.auto.running) return;
+      const p = state.player;
+      if (p.hp <= 0 || state.foe.hp <= 0){ stopAuto(); return; }
+      fightRound();
+      state.auto.timer = setTimeout(step, 170);
+    };
+
+    step();
+  }
+
+  function stopAuto(){
+    state.auto.running = false;
+    if (state.auto.timer) clearTimeout(state.auto.timer);
+    state.auto.timer = null;
+    elAutoState.textContent = "手動";
+  }
+
+  // ---- ドロップ（敵Lvで強化＆制限） ----
+  function dropTierForLevel(lv){
+    // 強い敵ほどレジェンド率増。ただし minDropLv で最終制限。
+    const pLegend = clamp((lv - 24) * 0.004, 0, 0.18);
+    const pEpic   = clamp(0.08 + (lv - 10) * 0.005, 0.08, 0.35);
+    const pRare   = clamp(0.28 + lv * 0.006, 0.28, 0.55);
+
+    const allowed = ["common"];
+    if (lv >= RARITY_MIN_LV.rare) allowed.push("rare");
+    if (lv >= RARITY_MIN_LV.epic) allowed.push("epic");
+    if (lv >= RARITY_MIN_LV.legend) allowed.push("legend");
+
+    return { allowed, pLegend, pEpic, pRare };
+  }
+
+  function rollLoot(enemy){
+    const slotRoll = roll(100);
+    let slotKey = "right";
+    if (slotRoll < 15) slotKey = "head";
+    else if (slotRoll < 35) slotKey = "boots";
+    else if (slotRoll < 55) slotKey = "armor";
+    else slotKey = "right";
+
+    const listAll = bySlot[slotKey === "right" ? "right" : slotKey];
+
+    const lv = enemy.lv;
+    const rule = dropTierForLevel(lv);
+
+    // まず欲しいレアリティを決める
+    const r = roll(1);
+    let want = "common";
+    if (rule.allowed.includes("legend") && r < rule.pLegend) want = "legend";
+    else if (rule.allowed.includes("epic") && r < rule.pLegend + rule.pEpic) want = "epic";
+    else if (rule.allowed.includes("rare") && r < rule.pLegend + rule.pEpic + rule.pRare) want = "rare";
+
+    const tiers = [want, "epic", "rare", "common"].filter((v,i,a)=>a.indexOf(v)===i);
+
+    // 強いアイテムは強い敵からしか出ない
+    const prefer = new Set(enemy.tags || []);
+
+    for (const rar of tiers){
+      // allowed で制限
+      if (!rule.allowed.includes(rar) && rar !== "common") continue;
+
+      // minDropLv で制限
+      let cand = listAll.filter(it => it.rarity === rar && it.minDropLv <= lv);
+      if (!cand.length) continue;
+
+      // 敵タグと一致したものを優先
+      const tagged = cand.filter(it => it.tags.some(t => prefer.has(t)));
+      if (tagged.length) cand = tagged;
+
+      // さらに: 上位Lvほど minDropLv が高いものに寄る
+      cand.sort((A,B)=>B.minDropLv - A.minDropLv);
+      const topSlice = cand.slice(0, Math.max(2, Math.floor(cand.length * clamp(0.35 + lv*0.003, 0.35, 0.7))));
+      return pick(topSlice);
+    }
+
+    // 最後の保険: common だけは必ず
+    const safe = listAll.filter(it => it.rarity === "common" && it.minDropLv <= lv);
+    return safe.length ? pick(safe) : pick(listAll);
+  }
+
+  // ---- 検索 ----
+  function matchesText(buildItems, q){
+    if (!q) return true;
+    const s = (q||"").toLowerCase();
+
+    // 日本語キーワードをタグに寄せる
+    const needTags = [];
+    if (q.includes("聖痕")) needTags.push("stigma");
+    if (q.includes("天使") || q.includes("熾天")) needTags.push("angel");
+    if (q.includes("祈") || q.includes("prayer")) needTags.push("prayer");
+
+    for (const it of buildItems){
+      const name = it.name.toLowerCase();
+      if (name.includes(s)) return true;
+      if (it.tags.some(t=>t.toLowerCase().includes(s))) return true;
+      if (needTags.length && needTags.some(t => it.tags.includes(t))) return true;
+    }
+    return false;
+  }
+
+  function matchesTags(tagMap, must, ban){
+    for (const t of must) if (!tagMap.has(t)) return false;
+    for (const t of ban) if (tagMap.has(t)) return false;
+    return true;
+  }
+
+  function meetsMin(tot, mins){
+    for (const k of STAT_KEYS) if (tot[k] < mins[k]) return false;
+    return true;
+  }
+
+  function candidateList(slotKey, all){
+    return all ? bySlot[slotKey] : ownedBySlot(slotKey);
+  }
+
+  function renderComboCount(){
+    const all = !!elSearchAll.checked;
+    const heads = candidateList("head", all);
+    const armors = candidateList("armor", all);
+    const boots = candidateList("boots", all);
+    const swords = candidateList("right", all);
+    const n = heads.length * armors.length * boots.length * swords.length * swords.length;
+    elComboCount.textContent = `全組み合わせ: ${n.toLocaleString()} 通り`;
+  }
+
+  function buildSearch(){
+    const all = !!elSearchAll.checked;
+
+    const mins = {};
+    for (const k of STAT_KEYS) mins[k] = Number(elMin[k].value || 0);
+    const q = (elTextQuery.value || "").trim();
+    const must = parseTags(elMustTags.value);
+    const ban = parseTags(elBanTags.value);
+    const sort = elSortBy.value;
+    const limit = Number(elLimit.value || 50);
+
+    const heads = candidateList("head", all);
+    const armors = candidateList("armor", all);
+    const boots = candidateList("boots", all);
+    const swords = candidateList("right", all);
+
+    const base = baseAtLevel(state.player.lv);
+
+    const out = [];
+
+    for (const h of heads){
+      for (const a of armors){
+        for (const b of boots){
+          for (const sL of swords){
+            for (const sR of swords){
+              const buildItems = [h,a,b,sL,sR];
+              if (!matchesText(buildItems, q)) continue;
+
+              const tmap = tagsFrom(buildItems);
+              if (!matchesTags(tmap, must, ban)) continue;
+
+              const addEquip = sumStats(h.stats, a.stats, b.stats, sL.stats, sR.stats);
+              const syn = computeSynergy(buildItems);
+
+              const tot = { ...base };
+              for (const kk of STAT_KEYS) tot[kk] += addEquip[kk] + syn.statBonus[kk];
+              tot.spd = Math.max(1, tot.spd);
+              tot.crt = clamp(tot.crt, 0, 85);
+              tot.hp = Math.max(1, tot.hp);
+
+              if (!meetsMin(tot, mins)) continue;
+
+              const score = powerScore(tot, syn);
+              const ownedOk = buildItems.every(x => state.inventory.has(x.id));
+              out.push({ h,a,b,sL,sR, tot, syn, score, ownedOk });
+            }
+          }
+        }
+      }
+    }
+
+    const key = (x) => sort === "power" ? x.score : (x.tot[sort] || 0);
+    out.sort((A,B) => key(B) - key(A));
+
+    state.lastResults = out.slice(0, limit);
+    renderResults();
+  }
+
+  function renderResults(){
+    const res = state.lastResults;
+    elResults.innerHTML = "";
+    elResultMeta.textContent = `${res.length}件 (上位表示)`;
+
+    if (!res.length){
+      const empty = document.createElement("div");
+      empty.className = "hint";
+      empty.textContent = "結果なし。条件をゆるめるか、必須タグ/除外タグを見直してみて。";
+      elResults.appendChild(empty);
+      return;
+    }
+
+    res.forEach((b, idx) => {
+      const card = document.createElement("div");
+      card.className = "build";
+
+      const itemsLine = [
+        `頭: ${b.h.name}`,
+        `鎧: ${b.a.name}`,
+        `靴: ${b.b.name}`,
+        `左: ${b.sL.name}`,
+        `右: ${b.sR.name}`,
+      ].join(" / ");
+
+      const statLine = STAT_KEYS.map(k=>`${STAT_LABEL[k]} ${b.tot[k]}`).join("  ");
+      const set2 = b.syn.active2.map(x=>x.name).join(" / ") || "(なし)";
+      const set3 = b.syn.active3.map(x=>x.name).join(" / ") || "(なし)";
+      const combo = b.syn.activeCombo.map(x=>x.name).join(" / ") || "(なし)";
+      const spec = b.syn.activeSpecial.map(x=>x.name).join(" / ") || "(なし)";
+
+      const ownedBadge = b.ownedOk ? "所持OK" : "未所持あり";
+
+      card.innerHTML = `
+        <div class="buildTop">
+          <div class="buildTitle">#${idx+1} <span>${itemsLine}</span></div>
+          <div class="buildScore">Score ${b.score.toFixed(1)} / <span style="color:var(--muted)">${ownedBadge}</span></div>
+        </div>
+        <div class="grid5">
+          <div class="smallBox"><div class="k">合計ステータス</div><div class="v" style="font-family:var(--mono)">${statLine}</div></div>
+          <div class="smallBox"><div class="k">特定装備</div><div class="v">${spec}</div></div>
+          <div class="smallBox"><div class="k">複合タグ</div><div class="v">${combo}</div></div>
+          <div class="smallBox"><div class="k">タグ(2) / レジェンド(3)</div><div class="v">${set2}<br/>${set3}</div></div>
+          <div class="smallBox"><div class="k">装備</div><div class="v"><button class="btn btn2" data-eq="${idx}" ${b.ownedOk?"":"disabled"}>このビルドを装備</button></div></div>
+        </div>
+      `;
+
+      elResults.appendChild(card);
+    });
+
+    elResults.querySelectorAll("button[data-eq]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const idx = Number(btn.getAttribute("data-eq"));
+        equipBuild(res[idx]);
+      });
+    });
+  }
+
+  function equipBuild(b){
+    if (!b.ownedOk){ log("未所持装備が含まれているため装備できない。", "defeat"); return; }
+
+    state.equip.head = b.h;
+    state.equip.armor = b.a;
+    state.equip.boots = b.b;
+    state.equip.left = b.sL;
+    state.equip.right = b.sR;
+    state.player.phoenixUsed = false;
+
+    renderSlots();
+    renderStats();
+    log("装備セットを反映。", "victory");
+  }
+
+  function weightedPick(list){
+    if (!list.length) return null;
+    const weights = list.map(it => it.rarity === "legend" ? 5 : it.rarity === "epic" ? 3.2 : it.rarity === "rare" ? 2 : 1);
+    const sum = weights.reduce((a,b)=>a+b,0);
+    let r = Math.random()*sum;
+    for (let i=0;i<list.length;i++){
+      r -= weights[i];
+      if (r <= 0) return list[i];
+    }
+    return list[list.length-1];
+  }
+
+  function randomEquip(){
+    for (const s of SLOTS){
+      const list = ownedBySlot(s.key);
+      const it = weightedPick(list);
+      state.equip[s.key] = it;
+    }
+    state.player.phoenixUsed = false;
+    renderSlots();
+    renderStats();
+    log("おすすめ装備をセット。 (所持品から選択)", "victory");
+  }
+
+  function clearEquip(){
+    for (const s of SLOTS) state.equip[s.key] = null;
+    state.player.phoenixUsed = false;
+    renderSlots();
+    renderStats();
+    log("装備をすべて外した。", "defeat");
+  }
+
+  // ---- ドット絵描画 ----
+  const PAL = {
+    bg1: "#0a0b11",
+    bg2: "#0f1322",
+    line: "rgba(255,255,255,.10)",
+    text: "#e9ecf5",
+    hero: "#74c0fc",
+    hero2: "#a5d8ff",
+    foe: "#ff6b6b",
+    foe2: "#ffa8a8",
+    gold: "#f2c14e",
+    ice: "#66d9e8",
+    fire: "#ff922b",
+    shadow: "#845ef7",
+    green: "#79d39a",
+    white: "#ffffff",
+  };
+
+  // 16x16の簡易スプライト（0:透明, 1:主色, 2:影, 3:目など）
+  const SPR_HERO = [
+    "0000000000000000",
+    "0000000110000000",
+    "0000001111000000",
+    "0000011111100000",
+    "0000111111110000",
+    "0000111101010000",
+    "0000111111110000",
+    "0000011111100000",
+    "0000001111000000",
+    "0000002112000000",
+    "0000022222200000",
+    "0000222222220000",
+    "0002222202222000",
+    "0000222000220000",
+    "0000022000220000",
+    "0000000000000000",
+  ];
+
+  const SPR_FOE = [
+    "0000000000000000",
+    "0000000333000000",
+    "0000033333330000",
+    "0000333333333000",
+    "0000333311333000",
+    "0000333311333000",
+    "0000333333333000",
+    "0000033333330000",
+    "0000003333000000",
+    "0000002222000000",
+    "0000022222200000",
+    "0000222222220000",
+    "0002222202222000",
+    "0000222000220000",
+    "0000022000220000",
+    "0000000000000000",
+  ];
+
+  function drawSprite(sprite, x, y, scale, flip, col1, col2, col3){
+    ctx.save();
+    ctx.translate(x, y);
+    if (flip){
+      ctx.scale(-1, 1);
+    }
+    for (let j=0;j<sprite.length;j++){
+      const row = sprite[j];
+      for (let i=0;i<row.length;i++){
+        const c = row[i];
+        if (c === "0") continue;
+        let col = col1;
+        if (c === "2") col = col2;
+        if (c === "3") col = col3;
+        ctx.fillStyle = col;
+        ctx.fillRect(i*scale, j*scale, scale, scale);
+      }
+    }
+    ctx.restore();
+  }
+
+  function bar(x,y,w,h,ratio, col){
+    ctx.fillStyle = "rgba(255,255,255,.10)";
+    ctx.fillRect(x,y,w,h);
+    ctx.fillStyle = col;
+    ctx.fillRect(x,y, Math.max(0, w*clamp(ratio,0,1)), h);
+    ctx.strokeStyle = "rgba(255,255,255,.15)";
+    ctx.strokeRect(x+0.5,y+0.5,w-1,h-1);
+  }
+
+  function drawHalo(cx, cy, r, alpha){
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.strokeStyle = `rgba(242,193,78,${alpha})`;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, r*1.2, r*0.55, 0, 0, Math.PI*2);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawWings(x, y, alpha){
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = `rgba(233,236,245,${alpha})`;
+    // 左翼
+    ctx.beginPath();
+    ctx.moveTo(x-18, y+40);
+    ctx.lineTo(x-52, y+28);
+    ctx.lineTo(x-30, y+60);
+    ctx.closePath();
+    ctx.fill();
+    // 右翼
+    ctx.beginPath();
+    ctx.moveTo(x+98, y+40);
+    ctx.lineTo(x+132, y+28);
+    ctx.lineTo(x+110, y+60);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawCross(x, y, alpha){
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = `rgba(242,193,78,${alpha})`;
+    const s = 6;
+    ctx.fillRect(x, y, s, s*3);
+    ctx.fillRect(x - s, y + s, s*3, s);
+    ctx.restore();
+  }
+
+  function renderBattleCanvas(){
+    const W = canvas.width, H = canvas.height;
+    const { tot, syn } = computeTotalForCurrent();
+    const p = state.player;
+    const foeT = getEnemy(state.foe.id);
+
+    const foeMax = state.foe._max || foeT.stats.hp;
+    const foeHp = state.foe.hp || 0;
+
+    const now = performance.now();
+    const dt = state.fx.lastT ? (now - state.fx.lastT) : 16;
+    state.fx.lastT = now;
+
+    // 背景
+    ctx.fillStyle = PAL.bg1;
+    ctx.fillRect(0,0,W,H);
+
+    // ステージ
+    ctx.fillStyle = "rgba(255,255,255,.03)";
+    ctx.fillRect(0, H-70, W, 70);
+    ctx.strokeStyle = PAL.line;
+    ctx.beginPath();
+    ctx.moveTo(0, H-70+0.5);
+    ctx.lineTo(W, H-70+0.5);
+    ctx.stroke();
+
+    // FX更新
+    if (state.fx.shake > 0) state.fx.shake = Math.max(0, state.fx.shake - dt*0.02);
+
+    const shake = state.fx.shake;
+    const sx = (Math.random()*2-1)*shake;
+    const sy = (Math.random()*2-1)*shake;
+
+    // アクション中イベント
+    const active = state.fx.queue.filter(e => (now - e.t0) < 240);
+    const hasP = active.some(e => ["p_hit","fire","arc","smite"].includes(e.kind));
+    const hasE = active.some(e => e.kind === "e_hit");
+    const spawn = active.some(e => e.kind === "spawn");
+    const victory = active.some(e => e.kind === "victory");
+    const defeat = active.some(e => e.kind === "defeat");
+    const angel = active.some(e => e.kind === "angel");
+    const smite = active.some(e => e.kind === "smite");
+
+    // 位置
+    const heroX = 180 + sx + (hasP ? 10 : 0);
+    const heroY = 70 + sy;
+    const foeX = 680 + sx + (hasE ? -10 : 0);
+    const foeY = 70 + sy;
+
+    // オーラ
+    if (spawn){
+      ctx.fillStyle = "rgba(116,192,252,.08)";
+      ctx.beginPath(); ctx.arc(heroX+40, heroY+55, 46, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle = "rgba(255,107,107,.08)";
+      ctx.beginPath(); ctx.arc(foeX-40, foeY+55, 46, 0, Math.PI*2); ctx.fill();
+    }
+
+    // 祈り系の見た目: halo / wings / stigma
+    const hasHolyLook = syn.tagMap.has("holy") || syn.tagMap.has("stigma") || syn.tagMap.has("angel") || syn.tagMap.has("prayer");
+    if (hasHolyLook){
+      drawHalo(heroX+40, heroY-6, 16, 0.55);
+    }
+    if (syn.tagMap.has("angel")){
+      drawWings(heroX, heroY, angel ? 0.55 : 0.35);
+      if (angel){
+        ctx.fillStyle = "rgba(242,193,78,.12)";
+        ctx.beginPath(); ctx.arc(heroX+40, heroY+55, 56, 0, Math.PI*2); ctx.fill();
+      }
+    }
+
+    // スプライト
+    drawSprite(SPR_HERO, heroX, heroY, 5, false, PAL.hero, PAL.hero2, PAL.white);
+    drawSprite(SPR_FOE, foeX, foeY, 5, true, PAL.foe, PAL.foe2, PAL.white);
+
+    // 聖痕: 手元に小さな印
+    if (syn.tagMap.has("stigma")){
+      ctx.fillStyle = "rgba(255,107,107,.55)";
+      ctx.fillRect(heroX+38, heroY+74, 6, 6);
+      ctx.fillRect(heroX+52, heroY+74, 6, 6);
+    }
+
+    // 攻撃エフェクト
+    if (hasP){
+      ctx.strokeStyle = "rgba(242,193,78,.65)";
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(heroX+110, heroY+65);
+      ctx.lineTo(foeX-90, foeY+65);
+      ctx.stroke();
+
+      // 属性色
+      const ev = active.find(e => ["fire","arc","smite"].includes(e.kind));
+      if (ev){
+        const col = ev.kind === "fire" ? PAL.fire : ev.kind === "smite" ? PAL.gold : PAL.ice;
+        ctx.fillStyle = col;
+        ctx.fillRect(foeX-110, foeY+50, 16, 16);
+      }
+    }
+    if (hasE){
+      ctx.strokeStyle = "rgba(255,107,107,.65)";
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(foeX-110, foeY+70);
+      ctx.lineTo(heroX+90, heroY+70);
+      ctx.stroke();
+    }
+
+    // 聖撃クロス
+    if (smite){
+      drawCross(foeX-90, foeY+22, 0.75);
+    }
+
+    // バナー
+    if (victory){
+      ctx.fillStyle = "rgba(121,211,154,.10)";
+      ctx.fillRect(0, 0, W, 32);
+      ctx.fillStyle = PAL.green;
+      ctx.font = "14px " + getComputedStyle(document.body).fontFamily;
+      ctx.fillText("VICTORY", 12, 22);
+    }
+    if (defeat){
+      ctx.fillStyle = "rgba(255,107,107,.10)";
+      ctx.fillRect(0, 0, W, 32);
+      ctx.fillStyle = PAL.foe;
+      ctx.font = "14px " + getComputedStyle(document.body).fontFamily;
+      ctx.fillText("DEFEAT", 12, 22);
+    }
+
+    // HPバー
+    bar(24, 18, 320, 10, (p.hp||0)/Math.max(1, p._max||tot.hp), "rgba(121,211,154,.5)");
+    bar(W-344, 18, 320, 10, foeHp/Math.max(1, foeMax), "rgba(255,107,107,.5)");
+
+    ctx.fillStyle = "rgba(255,255,255,.85)";
+    ctx.font = "12px " + getComputedStyle(document.body).fontFamily;
+    ctx.fillText(`Lv${p.lv} HP ${p.hp}/${p._max||tot.hp}`, 24, 48);
+    ctx.fillText(`${foeT.name} Lv${foeT.lv} HP ${foeHp}/${foeMax}`, W-344, 48);
+
+    // 浮きダメージ
+    state.fx.floats = state.fx.floats.filter(f => (now - f.t0) < f.life);
+    for (const f of state.fx.floats){
+      const age = now - f.t0;
+      const tt = age / f.life;
+      f.y += f.vy * dt;
+      ctx.globalAlpha = 1 - tt;
+      ctx.fillStyle = f.isFoe ? PAL.gold : PAL.white;
+      ctx.font = "16px " + getComputedStyle(document.body).fontFamily;
+      ctx.fillText(f.text, f.x + sx, f.y + sy);
+      ctx.globalAlpha = 1;
+    }
+
+    // queue の古いものを掃除
+    state.fx.queue = state.fx.queue.filter(e => (now - e.t0) < 300);
+  }
+
+  function animate(){
+    renderBattleCanvas();
+    requestAnimationFrame(animate);
+  }
+
+  // ---- 保存 ----
+  const LS_KEY = "equip_build_game_arena_v3";
+
+  function saveGame(){
+    try{
+      const payload = {
+        v: 3,
+        player: { lv: state.player.lv, exp: state.player.exp, hp: state.player.hp, phoenixUsed: !!state.player.phoenixUsed },
+        foe: { id: state.foe.id, hp: state.foe.hp, max: state.foe._max || 0, stats: state.foe._stats || null },
+        inventory: [...state.inventory],
+        equip: Object.fromEntries(SLOTS.map(s => [s.key, state.equip[s.key]?.id || ""])),
+        loot: state.lastLoot ? state.lastLoot.id : "",
+        searchAll: !!elSearchAll.checked,
+      };
+      localStorage.setItem(LS_KEY, JSON.stringify(payload));
+    }catch(e){}
+  }
+
+  function loadGame(){
+    try{
+      const raw = localStorage.getItem(LS_KEY);
+      if (!raw) return false;
+      const p = JSON.parse(raw);
+      if (!p || p.v !== 3) return false;
+
+      state.player.lv = Math.max(1, Number(p.player?.lv||1));
+      state.player.exp = Math.max(0, Number(p.player?.exp||0));
+      state.player.hp = Math.max(0, Number(p.player?.hp||1));
+      state.player.phoenixUsed = !!p.player?.phoenixUsed;
+
+      state.inventory = new Set((p.inventory||[]).filter(id => ITEM_BY_ID.has(id)));
+
+      const eq = p.equip || {};
+      for (const s of SLOTS){
+        const id = eq[s.key];
+        state.equip[s.key] = id ? ITEM_BY_ID.get(id) : null;
+      }
+
+      state.foe.id = (p.foe?.id && ENEMIES.some(e=>e.id===p.foe.id)) ? p.foe.id : ENEMIES[0].id;
+      state.foe.hp = Math.max(0, Number(p.foe?.hp||0));
+      state.foe._max = Math.max(0, Number(p.foe?.max||0));
+      state.foe._stats = p.foe?.stats || null;
+
+      if (p.searchAll) elSearchAll.checked = true;
+
+      const lootId = p.loot;
+      state.lastLoot = lootId ? ITEM_BY_ID.get(lootId) : null;
+      if (state.lastLoot){
+        const it = state.lastLoot;
+        elLootLine.innerHTML = `前回ドロップ: <span style="color:${rarityColor(it.rarity)}">●</span> <b>${it.name}</b> [${it.rarity}]`;
+      }
+
+      return true;
+    }catch(e){
+      return false;
+    }
+  }
+
+  function newGame(){
+    stopAuto();
+
+    state.player.lv = 1;
+    state.player.exp = 0;
+    state.player.phoenixUsed = false;
+
+    state.inventory = new Set();
+
+    const starters = ["h1","a1","b1","s1","s2","s12"]; 
+    for (const id of starters) if (ITEM_BY_ID.has(id)) state.inventory.add(id);
+
+    state.equip.head = ITEM_BY_ID.get("h1");
+    state.equip.armor = ITEM_BY_ID.get("a1");
+    state.equip.boots = ITEM_BY_ID.get("b1");
+    state.equip.left = ITEM_BY_ID.get("s1");
+    state.equip.right = ITEM_BY_ID.get("s2");
+
+    state.lastLoot = null;
+    elLootLine.textContent = "まだドロップなし。";
+
+    state.foe.id = ENEMIES[0].id;
+    state.foe._stats = null;
+    state.foe._max = 0;
+    state.foe.hp = 0;
+
+    elLog.innerHTML = "";
+
+    renderEnemySelect();
+    renderSlots();
+
+    const tot = computeTotalForCurrent().tot;
+    state.player._max = tot.hp;
+    state.player.hp = state.player._max;
+
+    spawnEnemy();
+    renderStats();
+    renderInventory();
+    renderComboCount();
+
+    log("ニューゲーム開始。初期装備だけ所持した状態でスタート。", "spawn");
+    saveGame();
+  }
+
+  // ---- イベント ----
+  document.getElementById("btnSearch").addEventListener("click", () => {
+    const t0 = performance.now();
+    renderComboCount();
+    buildSearch();
+    const t1 = performance.now();
+    log(`検索完了: ${(t1-t0).toFixed(0)}ms`, "victory");
+  });
+
+  document.getElementById("btnEquipTop").addEventListener("click", () => {
+    if (!state.lastResults.length){ log("検索結果がない。", "defeat"); return; }
+    if (!state.lastResults[0].ownedOk){
+      log("1位は未所持装備が含まれているため装備できない。図鑑検索をOFFにするか、ドロップで集めよう。", "defeat");
+      return;
+    }
+    equipBuild(state.lastResults[0]);
+  });
+
+  document.getElementById("btnRandom").addEventListener("click", randomEquip);
+  document.getElementById("btnClear").addEventListener("click", clearEquip);
+
+  document.getElementById("btnRound").addEventListener("click", () => { stopAuto(); fightRound(); });
+  document.getElementById("btnAuto").addEventListener("click", autoFightToggle);
+  document.getElementById("btnHeal").addEventListener("click", () => { stopAuto(); heal(); });
+  document.getElementById("btnSpawn").addEventListener("click", () => { stopAuto(); spawnEnemy(); });
+  document.getElementById("btnNewGame").addEventListener("click", newGame);
+  document.getElementById("btnClearLog").addEventListener("click", () => { stopAuto(); elLog.innerHTML = ""; });
+
+  elEnemySelect.addEventListener("change", () => {
+    stopAuto();
+    state.foe.id = elEnemySelect.value;
+    state.foe._stats = null;
+    state.foe._max = 0;
+    state.foe.hp = 0;
+    renderArena();
+    saveGame();
+  });
+
+  elSearchAll.addEventListener("change", () => { renderComboCount(); saveGame(); });
+
+  // 初期化
+  renderEnemySelect();
+
+  const ok = loadGame();
+  if (!ok){
+    newGame();
+  } else {
+    if (state.inventory.size === 0) {
+      newGame();
+    } else {
+      renderSlots();
+      renderStats();
+      renderInventory();
+      renderComboCount();
+      if (!state.foe._stats || !state.foe._max || state.foe.hp <= 0){
+        spawnEnemy();
+      } else {
+        renderArena();
+        log("ロード完了。", "spawn");
+      }
+    }
+  }
+
+  requestAnimationFrame(animate);
+})();
+</script>
+</body>
 </html>
