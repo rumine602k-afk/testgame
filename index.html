@@ -1371,7 +1371,7 @@
         state.lastLoot = loot;
         elLootLine.innerHTML = `ドロップ: <span style="color:${rarityColor(loot.rarity)}">●</span> <b>${loot.name}</b> [${loot.rarity}] (dropLv≥${loot.minDropLv})`;
         log(`入手: ${loot.name} [${loot.rarity}]`, "victory");
-	    pushFX({ kind:"loot", text:`New! ${loot.name}`, dur: 2200 });
+	    pushFX({ kind:"loot", text:`New! ${loot.name}`, dur: 5000 });
       } else {
         const dupExp = Math.max(2, Math.floor(enemy.xp * 0.12));
         state.lastLoot = loot;
@@ -2031,7 +2031,7 @@
       const w = 260;
       const h = 32;
       const x = (W - w) / 2;
-      const y = 12;
+      const y = 44;
       ctx.save();
       ctx.globalAlpha = 0.75 * alpha;
       ctx.fillStyle = "rgba(121,211,154,.20)";
