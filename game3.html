@@ -62,7 +62,7 @@
     }
     .character{
       position:relative;
-      width:200px;
+      width:170px;
       text-align:center;
       transition:transform .2s ease;
     }
@@ -237,6 +237,7 @@
     const effects = document.getElementById('effects');
     const heroEl = document.getElementById('hero');
     const enemyEl = document.getElementById('enemy');
+    const stageEl = document.getElementById('stage');
     const heroHpBar = document.getElementById('heroHp');
     const enemyHpBar = document.getElementById('enemyHp');
     const heroHpText = document.getElementById('heroHpText');
@@ -248,14 +249,18 @@
       swords:[
         {id:'bronze', name:'ブロンズソード', hits:[12], desc:'1回斬撃で12ダメージ'},
         {id:'lightning', name:'ライトニングソード', hits:[12,10], desc:'2回斬撃。1撃目12ダメージ、追撃10ダメージ'},
+        {id:'rapier', name:'レイピア', hits:[8,8,8], desc:'素早い3連撃。各8ダメージ'},
+        {id:'claymore', name:'クレイモア', hits:[22], desc:'重い一撃。22ダメージ'},
       ],
       shields:[
         {id:'wood', name:'バックラー', desc:'効果なし'},
         {id:'divine', name:'ディバインシールド', desc:'剣攻撃が終わった後に雷撃（6ダメージ）', effect:{type:'lightning', damage:6}},
+        {id:'mirror', name:'ミラーシールド', desc:'効果なし（のちほど反射を追加予定）'},
       ],
       armors:[
         {id:'cloth', name:'クロスアーマー', hpBonus:0, desc:'シンプルな布の鎧'},
         {id:'leather', name:'レザーアーマー', hpBonus:30, desc:'最大HP +30'},
+        {id:'scale', name:'スケイルメイル', hpBonus:50, desc:'最大HP +50'},
       ]
     };
 
@@ -368,26 +373,39 @@
       effects.appendChild(slash);
       setTimeout(()=>slash.remove(), 400);
     }
+    function getEnemyCenter(){
+      const stageRect = stageEl.getBoundingClientRect();
+      const enemyRect = enemyEl.getBoundingClientRect();
+      const x = enemyRect.left - stageRect.left + enemyRect.width * 0.5;
+      const y = enemyRect.top - stageRect.top + enemyRect.height * 0.55;
+      return { x, y };
+    }
 
     function spawnLightning(){
+      const center = getEnemyCenter();
       const bolt = document.createElement('div');
       bolt.className = 'lightning';
+      bolt.style.left = `${center.x}px`;
+      bolt.style.top = `${center.y - 90}px`;
       effects.appendChild(bolt);
       const shock = document.createElement('div');
       shock.className = 'shock';
+      shock.style.left = `${center.x}px`;
+      shock.style.top = `${center.y}px`;
       effects.appendChild(shock);
       setTimeout(()=>bolt.remove(), 520);
       setTimeout(()=>shock.remove(), 520);
     }
 
     function spawnDamage(num){
+      const center = getEnemyCenter();
       const dmg = document.createElement('div');
       dmg.className = 'damage';
       dmg.textContent = `-${num}`;
-      const top = 30 + Math.random()*18;
-      const left = 68 + Math.random()*12;
-      dmg.style.top = `${top}%`;
-      dmg.style.left = `${left}%`;
+      const jitterX = (Math.random()*24 - 12);
+      const jitterY = (Math.random()*14 - 6);
+      dmg.style.top = `${center.y - 80 + jitterY}px`;
+      dmg.style.left = `${center.x - 10 + jitterX}px`;
       effects.appendChild(dmg);
       setTimeout(()=>dmg.remove(), 900);
     }
