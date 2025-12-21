@@ -52,6 +52,33 @@
     button:hover{filter:brightness(1.1)}
     button:active{transform:translateY(1px)}
     canvas{display:block; width:100%; height:auto; border-radius:12px; border:1px solid var(--line); background:rgba(0,0,0,.22);}
+    .equip{
+      margin-top:14px;
+      display:grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap:10px;
+    }
+    .slotCard{
+      border:1px solid var(--line);
+      border-radius:12px;
+      padding:10px;
+      background:rgba(255,255,255,.02);
+    }
+    .slotCard .label{font-size:13px; color:var(--muted); margin-bottom:6px;}
+    .slotCard select{
+      width:100%;
+      height:42px;
+      border-radius:10px;
+    }
+    .abilityBox{
+      margin-top:10px;
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid var(--line);
+      background:rgba(125,211,169,.10);
+      color:#d6f5e5;
+      font-size:13px;
+    }
   </style>
 </head>
 <body>
@@ -68,6 +95,22 @@
     <div style="margin-top:12px;">
       <canvas id="battle" width="880" height="320"></canvas>
     </div>
+
+    <div class="equip">
+      <div class="slotCard">
+        <div class="label">剣</div>
+        <select id="swordSlot"></select>
+      </div>
+      <div class="slotCard">
+        <div class="label">鎧</div>
+        <select id="armorSlot"></select>
+      </div>
+      <div class="slotCard">
+        <div class="label">盾</div>
+        <select id="shieldSlot"></select>
+      </div>
+    </div>
+    <div class="abilityBox" id="abilityBox">能力: なし</div>
   </div>
 
   <script>
@@ -81,6 +124,7 @@
     const groundY = 250;
     const heroScale = 0.45;
     const foeScale = 0.55;
+    const attackDur = 1100;
 
     const state = {
       baseHeroX: 140,
@@ -93,6 +137,29 @@
       flashTimer: 0,
       slashTimer: 0,
       swingPlayed: false,
+      remainingAttacks: 0,
+      lastSword: "",
+    };
+
+    const equipment = {
+      sword: [
+        { id:"basic", name:"ブロンズソード", ability:null },
+        { id:"lightning", name:"ライトニングソード (二回攻撃)", ability:"double" },
+      ],
+      armor: [
+        { id:"cloth", name:"クロスアーマー", ability:null },
+        { id:"iron", name:"アイアンメイル", ability:null },
+      ],
+      shield: [
+        { id:"wood", name:"ウッドシールド", ability:null },
+        { id:"buckler", name:"バックラー", ability:null },
+      ],
+    };
+
+    const equipState = {
+      sword: equipment.sword[0].id,
+      armor: equipment.armor[0].id,
+      shield: equipment.shield[0].id,
     };
 
     const waitImages = Promise.all([
@@ -104,12 +171,22 @@
     function easeInOutCubic(t){ return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
 
     function triggerAttack(){
-      if(state.attackActive) return;
+      const sword = equipment.sword.find(s => s.id === equipState.sword);
+      const attackCount = sword?.ability === "double" ? 2 : 1;
+      if(state.attackActive){
+        state.remainingAttacks = Math.max(state.remainingAttacks, attackCount);
+        return;
+      }
+      startAttack(attackCount);
+    }
+
+    function startAttack(count){
       state.attackActive = true;
       state.attackTimer = 0;
       state.flashTimer = 0;
       state.slashTimer = 0;
       state.swingPlayed = false;
+      state.remainingAttacks = Math.max(0, count - 1);
     }
 
     document.getElementById('attackBtn').addEventListener('click', triggerAttack);
@@ -146,7 +223,15 @@
         state.heroX = state.baseHeroX + (1 - p) * 40;
       }else{
         state.heroX = state.baseHeroX;
-        state.attackActive = false;
+        if(state.remainingAttacks > 0){
+          state.remainingAttacks -= 1;
+          state.attackTimer = 0;
+          state.flashTimer = 0;
+          state.slashTimer = 0;
+          state.swingPlayed = false;
+        }else{
+          state.attackActive = false;
+        }
       }
 
       if(state.flashTimer > 0){
@@ -207,6 +292,8 @@
       const progress = 1 - state.slashTimer / 280;
       const x = state.foeX - 12;
       const y = state.foeY - 30;
+      const sword = equipment.sword.find(s => s.id === equipState.sword);
+      const lightning = sword?.ability === "double";
       ctx.save();
       ctx.translate(x, y);
       ctx.rotate(-0.25);
@@ -214,8 +301,8 @@
       const thick = 16 + progress * 6;
       const grad = ctx.createLinearGradient(-10, -len/2, 60, len/2);
       grad.addColorStop(0,'rgba(255,255,255,.0)');
-      grad.addColorStop(0.45,'rgba(255,255,255,.8)');
-      grad.addColorStop(1,'rgba(125,211,169,.0)');
+      grad.addColorStop(0.45, lightning ? 'rgba(116,192,252,.9)' : 'rgba(255,255,255,.8)');
+      grad.addColorStop(1, lightning ? 'rgba(116,192,252,.0)' : 'rgba(125,211,169,.0)');
       ctx.strokeStyle = grad;
       ctx.lineWidth = thick;
       ctx.lineCap = 'round';
@@ -223,6 +310,15 @@
       ctx.moveTo(-20, -len/2);
       ctx.lineTo(len, len/2);
       ctx.stroke();
+      if(lightning){
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = 'rgba(116,192,252,.55)';
+        ctx.beginPath();
+        ctx.moveTo(-6, -len/3);
+        ctx.lineTo(len*0.5, len/4);
+        ctx.lineTo(len*0.8, len/2);
+        ctx.stroke();
+      }
       ctx.restore();
     }
 
@@ -235,11 +331,49 @@
       // small caption
       ctx.fillStyle = 'rgba(255,255,255,.6)';
       ctx.font = '13px "Noto Sans JP", "Yu Gothic", sans-serif';
-      ctx.fillText('勇者が左、敵が右。攻撃ボタンで剣を振ります。', 26, 32);
+      const sword = equipment.sword.find(s => s.id === equipState.sword);
+      const tip = sword?.ability === "double" ? "ライトニングソード: 2回連続攻撃" : "勇者が左、敵が右。攻撃ボタンで剣を振ります。";
+      ctx.fillText(tip, 26, 32);
+    }
+
+    function fillSlot(selectEl, list, currentId){
+      selectEl.innerHTML = "";
+      list.forEach(item => {
+        const opt = document.createElement("option");
+        opt.value = item.id;
+        opt.textContent = item.name;
+        if(item.id === currentId) opt.selected = true;
+        selectEl.appendChild(opt);
+      });
+    }
+
+    function updateAbilityBox(){
+      const sword = equipment.sword.find(s => s.id === equipState.sword);
+      const box = document.getElementById('abilityBox');
+      if(sword?.ability === "double"){
+        box.textContent = "能力: ライトニングソード - 攻撃ボタンで2回連続攻撃";
+      }else{
+        box.textContent = "能力: なし";
+      }
+    }
+
+    function setupEquipUI(){
+      const swordEl = document.getElementById('swordSlot');
+      const armorEl = document.getElementById('armorSlot');
+      const shieldEl = document.getElementById('shieldSlot');
+      fillSlot(swordEl, equipment.sword, equipState.sword);
+      fillSlot(armorEl, equipment.armor, equipState.armor);
+      fillSlot(shieldEl, equipment.shield, equipState.shield);
+
+      swordEl.addEventListener('change', e => { equipState.sword = e.target.value; updateAbilityBox(); });
+      armorEl.addEventListener('change', e => { equipState.armor = e.target.value; });
+      shieldEl.addEventListener('change', e => { equipState.shield = e.target.value; });
+      updateAbilityBox();
     }
 
     waitImages.then(() => {
       draw();
+      setupEquipUI();
       requestAnimationFrame(loop);
     });
   </script>
