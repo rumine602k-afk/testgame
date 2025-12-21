@@ -424,7 +424,6 @@
       if(hasSpikeBolt()) extras.push("スパイクボルト: 33%で飛来ダメージ");
       ctx.fillText([tip, ...extras].join(" / "), 26, 32);
     }
-
     function drawDamage(){
       ctx.font = 'bold 18px "Noto Sans JP", "Yu Gothic", sans-serif';
       damageNumbers.forEach(d => {
@@ -482,12 +481,11 @@
 
     function trySpike(){
       if(!hasSpikeBolt()) return;
-      if(shield?.ability !== "spike") return;
       if(Math.random() < 0.33){
         state.spike = { active:true, t:0, x:0, y:0, hit:false };
       }
     }
-    
+
     function hasSpikeBolt(){
       const sword = equipment.sword.find(s => s.id === equipState.sword);
       const shield = equipment.shield.find(s => s.id === equipState.shield);
