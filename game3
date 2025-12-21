@@ -1,1 +1,468 @@
-<html>
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>game3 装備切り替え・能力発動デモ</title>
+  <style>
+    :root{
+      --bg:#0c1020;
+      --panel:#11172c;
+      --line:rgba(255,255,255,.08);
+      --muted:#9faac2;
+      --accent:#80d6b2;
+      --danger:#f47493;
+      --warning:#f8d47f;
+    }
+    *{box-sizing:border-box;}
+    body{
+      margin:0;
+      background:radial-gradient(1200px 800px at 20% 0%, rgba(125,211,169,.12), transparent 50%),
+                 radial-gradient(1100px 900px at 80% 10%, rgba(116,192,252,.10), transparent 45%),
+                 var(--bg);
+      color:#e9edf6;
+      font-family:"Noto Sans JP", "Yu Gothic", system-ui, -apple-system, sans-serif;
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:24px;
+    }
+    .shell{
+      width:min(1100px, 100%);
+      display:grid;
+      gap:12px;
+      grid-template-rows:auto 260px 220px auto;
+      background:linear-gradient(180deg, rgba(255,255,255,.05), transparent 36%), var(--panel);
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:18px;
+      box-shadow:0 18px 36px rgba(0,0,0,.45);
+    }
+    header{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:14px;
+      flex-wrap:wrap;
+    }
+    h1{margin:0; font-size:20px; letter-spacing:.01em;}
+    .muted{color:var(--muted); font-size:13px;}
+    .stage{
+      position:relative;
+      border:1px solid var(--line);
+      border-radius:14px;
+      background:linear-gradient(180deg, rgba(255,255,255,.04), transparent 40%), radial-gradient(160% 120% at 50% 0%, rgba(255,255,255,.04), transparent 65%), #0e1326;
+      overflow:hidden;
+      display:flex;
+      align-items:flex-end;
+      justify-content:space-between;
+      padding:18px 20px 14px;
+      isolation:isolate;
+    }
+    .character{
+      position:relative;
+      width:200px;
+      text-align:center;
+      transition:transform .2s ease;
+    }
+    .character img{
+      width:100%;
+      height:auto;
+      filter:drop-shadow(0 12px 16px rgba(0,0,0,.45));
+      transition:transform .18s ease;
+    }
+    .character.forward img{transform:translateX(24px);}
+    .enemy img{transform:scaleX(-1);}
+    .hpbar{
+      height:14px;
+      background:rgba(255,255,255,.05);
+      border:1px solid var(--line);
+      border-radius:999px;
+      overflow:hidden;
+      margin:8px 6px 0;
+      position:relative;
+    }
+    .hpbar .fill{
+      height:100%;
+      width:100%;
+      background:linear-gradient(90deg, #79e0c0, #5fc4f5);
+      transform-origin:left center;
+      transition:width .18s ease;
+    }
+    .nameplate{font-size:14px; font-weight:600; letter-spacing:.02em;}
+    .number{font-size:12px; color:var(--muted); margin-top:2px;}
+
+    .logpanel{
+      border:1px solid var(--line);
+      border-radius:12px;
+      background:rgba(255,255,255,.02);
+      padding:12px;
+      overflow:hidden;
+    }
+    .logpanel h2{margin:0 0 8px; font-size:15px; letter-spacing:.02em;}
+    #logList{
+      height:170px;
+      overflow-y:auto;
+      display:flex;
+      flex-direction:column;
+      gap:4px;
+      font-size:13px;
+    }
+    #logList .entry{color:#e9edf6; background:rgba(255,255,255,.02); padding:6px 8px; border-radius:8px; border:1px solid var(--line);}
+
+    .control{
+      border:1px solid var(--line);
+      border-radius:12px;
+      padding:12px;
+      background:rgba(255,255,255,.02);
+      display:grid;
+      grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));
+      gap:12px;
+    }
+    .slot{
+      border:1px solid var(--line);
+      border-radius:10px;
+      padding:10px;
+      background:rgba(255,255,255,.02);
+    }
+    .slot .label{font-size:13px; color:var(--muted); margin-bottom:6px;}
+    select{
+      width:100%; height:42px;
+      border-radius:10px; border:1px solid var(--line);
+      background:#0d1222; color:#e9edf6;
+      padding:0 10px;
+      font:inherit;
+    }
+    .abilityBox{
+      border:1px solid var(--line);
+      border-radius:12px;
+      padding:12px;
+      background:rgba(125,211,169,.12);
+      color:#dff6e8;
+      font-size:13px;
+    }
+    .footerRow{display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:space-between;}
+    .stats{font-size:13px; color:var(--muted);}
+    button{
+      border:1px solid var(--line);
+      border-radius:12px;
+      padding:12px 18px;
+      background:rgba(128,214,178,.16);
+      color:#e9edf6;
+      font:inherit;
+      cursor:pointer;
+      transition:transform .08s ease, filter .15s ease;
+    }
+    button:hover{filter:brightness(1.05)}
+    button:active{transform:translateY(1px)}
+    button:disabled{opacity:.45; cursor:not-allowed; filter:none; transform:none;}
+
+    .effect-layer{position:absolute; inset:0; pointer-events:none; overflow:hidden;}
+    .slash{position:absolute; width:160px; height:60px; background:linear-gradient(90deg, rgba(255,255,255,.0), rgba(255,255,255,.8), rgba(255,255,255,.0));
+      filter:drop-shadow(0 0 10px rgba(255,255,255,.65));
+      transform-origin:center; opacity:0;
+      animation:slash .32s ease-out forwards;
+    }
+    @keyframes slash{from{opacity:.9; transform:scale(.6) rotate(12deg);} to{opacity:0; transform:scale(1.08) rotate(-6deg);} }
+    .lightning{position:absolute; width:6px; height:140px; background:linear-gradient(180deg, #b5f0ff, #6dd7ff, rgba(109,215,255,0)); left:50%; top:10%; transform:translateX(-50%);
+      filter:drop-shadow(0 0 18px rgba(109,215,255,.75)); opacity:0; animation:bolt .5s ease-out forwards;
+    }
+    @keyframes bolt{0%{opacity:0;} 20%{opacity:1;} 100%{opacity:0; transform:translate(-50%, 6px);} }
+    .shock{position:absolute; width:90px; height:90px; border:2px solid rgba(181,240,255,.9); border-radius:50%; left:50%; top:52%; transform:translate(-50%,-50%) scale(.4); opacity:0; animation:shock .48s ease-out forwards;}
+    @keyframes shock{0%{opacity:.8;} 60%{opacity:.45; transform:translate(-50%,-50%) scale(1.05);} 100%{opacity:0; transform:translate(-50%,-50%) scale(1.2);} }
+    .damage{position:absolute; color:#ffe7a2; font-weight:700; text-shadow:0 2px 8px rgba(0,0,0,.5); font-size:18px;
+      animation:float 0.9s ease-out forwards;
+    }
+    @keyframes float{0%{opacity:0; transform:translateY(10px);} 20%{opacity:1;} 100%{opacity:0; transform:translateY(-26px);} }
+    .dangerText{color:var(--danger);}
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header>
+      <div>
+        <h1>装備切り替え・能力発動ゲーム v3</h1>
+        <div class="muted">ライトニングソードとディバインシールドの連撃演出付き。攻撃ボタンで順番に演出を再生します。</div>
+      </div>
+      <button id="attackBtn">Attack</button>
+    </header>
+
+    <div class="stage" id="stage">
+      <div class="character hero" id="hero">
+        <div class="nameplate">勇者</div>
+        <div class="hpbar"><div class="fill" id="heroHp"></div></div>
+        <div class="number" id="heroHpText">HP 0 / 0</div>
+        <img src="character_oji_03_blue_brown.png" alt="hero">
+      </div>
+      <div class="character enemy" id="enemy">
+        <div class="nameplate">ガーゴイル</div>
+        <div class="hpbar"><div class="fill" id="enemyHp"></div></div>
+        <div class="number" id="enemyHpText">HP 0 / 0</div>
+        <img src="character_monster_gargoyle_purple.png" alt="enemy">
+      </div>
+      <div class="effect-layer" id="effects"></div>
+    </div>
+
+    <div class="logpanel">
+      <h2>戦闘ログ</h2>
+      <div id="logList"></div>
+    </div>
+
+    <div class="control">
+      <div class="slot">
+        <div class="label">剣</div>
+        <select id="swordSlot"></select>
+      </div>
+      <div class="slot">
+        <div class="label">盾</div>
+        <select id="shieldSlot"></select>
+      </div>
+      <div class="slot">
+        <div class="label">鎧</div>
+        <select id="armorSlot"></select>
+      </div>
+      <div class="slot abilityBox" id="abilityBox">装備効果: なし</div>
+    </div>
+
+    <div class="footerRow">
+      <div class="stats" id="statLine">勇者/敵 ステータス</div>
+      <div class="muted">ログは最大30行まで保持します。</div>
+    </div>
+  </div>
+
+  <script>
+    const attackBtn = document.getElementById('attackBtn');
+    const logList = document.getElementById('logList');
+    const effects = document.getElementById('effects');
+    const heroEl = document.getElementById('hero');
+    const enemyEl = document.getElementById('enemy');
+    const heroHpBar = document.getElementById('heroHp');
+    const enemyHpBar = document.getElementById('enemyHp');
+    const heroHpText = document.getElementById('heroHpText');
+    const enemyHpText = document.getElementById('enemyHpText');
+    const statLine = document.getElementById('statLine');
+    const abilityBox = document.getElementById('abilityBox');
+
+    const equipment = {
+      swords:[
+        {id:'bronze', name:'ブロンズソード', hits:[12], desc:'1回斬撃で12ダメージ'},
+        {id:'lightning', name:'ライトニングソード', hits:[12,10], desc:'2回斬撃。1撃目12ダメージ、追撃10ダメージ'},
+      ],
+      shields:[
+        {id:'wood', name:'バックラー', desc:'効果なし'},
+        {id:'divine', name:'ディバインシールド', desc:'剣攻撃が終わった後に雷撃（6ダメージ）', effect:{type:'lightning', damage:6}},
+      ],
+      armors:[
+        {id:'cloth', name:'クロスアーマー', hpBonus:0, desc:'シンプルな布の鎧'},
+        {id:'leather', name:'レザーアーマー', hpBonus:30, desc:'最大HP +30'},
+      ]
+    };
+
+    const heroBase = { name:'勇者', maxHp:120, hp:120, attack:18, defense:4 };
+    const enemyBase = { name:'ガーゴイル', maxHp:160, hp:160, attack:12, defense:3 };
+
+    const state = {
+      sword:'lightning',
+      shield:'divine',
+      armor:'cloth',
+      logs:[],
+      busy:false,
+      hero:{...heroBase},
+      enemy:{...enemyBase},
+    };
+
+    function populateSelect(select, list){
+      list.forEach(item=>{
+        const opt = document.createElement('option');
+        opt.value = item.id;
+        opt.textContent = item.name;
+        select.appendChild(opt);
+      });
+    }
+
+    const swordSlot = document.getElementById('swordSlot');
+    const shieldSlot = document.getElementById('shieldSlot');
+    const armorSlot = document.getElementById('armorSlot');
+    populateSelect(swordSlot, equipment.swords);
+    populateSelect(shieldSlot, equipment.shields);
+    populateSelect(armorSlot, equipment.armors);
+
+    swordSlot.value = state.sword;
+    shieldSlot.value = state.shield;
+    armorSlot.value = state.armor;
+
+    swordSlot.addEventListener('change', ()=>{
+      state.sword = swordSlot.value;
+      updateAbilityBox();
+    });
+    shieldSlot.addEventListener('change', ()=>{
+      state.shield = shieldSlot.value;
+      updateAbilityBox();
+    });
+    armorSlot.addEventListener('change', ()=>{
+      const prevMax = state.hero.maxHp;
+      state.armor = armorSlot.value;
+      applyArmor(prevMax);
+      updateAbilityBox();
+      updateHud();
+    });
+
+    function pushLog(text){
+      state.logs.push(text);
+      if(state.logs.length>30){
+        state.logs.shift();
+      }
+      renderLogs();
+    }
+
+    function renderLogs(){
+      logList.innerHTML = '';
+      state.logs.forEach(line=>{
+        const div = document.createElement('div');
+        div.className = 'entry';
+        div.textContent = line;
+        logList.appendChild(div);
+      });
+      logList.scrollTop = logList.scrollHeight;
+    }
+
+    function updateHud(){
+      const heroRatio = state.hero.hp / state.hero.maxHp;
+      const enemyRatio = state.enemy.hp / state.enemy.maxHp;
+      heroHpBar.style.width = `${Math.max(0, heroRatio*100)}%`;
+      enemyHpBar.style.width = `${Math.max(0, enemyRatio*100)}%`;
+      heroHpText.textContent = `HP ${state.hero.hp} / ${state.hero.maxHp}`;
+      enemyHpText.textContent = `HP ${state.enemy.hp} / ${state.enemy.maxHp}`;
+      statLine.textContent = `勇者: HP ${state.hero.hp}/${state.hero.maxHp} ATK ${state.hero.attack} DEF ${state.hero.defense}｜敵: HP ${state.enemy.hp}/${state.enemy.maxHp}`;
+    }
+
+    function updateAbilityBox(){
+      const sword = equipment.swords.find(s=>s.id===state.sword);
+      const shield = equipment.shields.find(s=>s.id===state.shield);
+      const armor = equipment.armors.find(s=>s.id===state.armor);
+      const lines = [
+        `剣: ${sword.name} — ${sword.desc}`,
+        `盾: ${shield.name} — ${shield.desc}`,
+        `鎧: ${armor.name} — ${armor.desc}${armor.hpBonus?` (HP+${armor.hpBonus})`:''}`
+      ];
+      abilityBox.textContent = `装備効果: ${lines.join(' / ')}`;
+    }
+
+    function applyArmor(prevMax){
+      const armor = equipment.armors.find(a=>a.id===state.armor);
+      const newMax = heroBase.maxHp + (armor.hpBonus || 0);
+      const ratio = state.hero.hp / (prevMax || state.hero.maxHp);
+      state.hero.maxHp = newMax;
+      state.hero.hp = Math.min(newMax, Math.max(1, Math.round(newMax * ratio)));
+    }
+
+    function spawnSlash(){
+      const slash = document.createElement('div');
+      slash.className = 'slash';
+      const top = 40 + Math.random()*50;
+      const left = 55 + Math.random()*20;
+      slash.style.top = `${top}%`;
+      slash.style.left = `${left}%`;
+      slash.style.transform = `rotate(${Math.random()*20 - 10}deg)`;
+      effects.appendChild(slash);
+      setTimeout(()=>slash.remove(), 400);
+    }
+
+    function spawnLightning(){
+      const bolt = document.createElement('div');
+      bolt.className = 'lightning';
+      effects.appendChild(bolt);
+      const shock = document.createElement('div');
+      shock.className = 'shock';
+      effects.appendChild(shock);
+      setTimeout(()=>bolt.remove(), 520);
+      setTimeout(()=>shock.remove(), 520);
+    }
+
+    function spawnDamage(num){
+      const dmg = document.createElement('div');
+      dmg.className = 'damage';
+      dmg.textContent = `-${num}`;
+      const top = 30 + Math.random()*18;
+      const left = 68 + Math.random()*12;
+      dmg.style.top = `${top}%`;
+      dmg.style.left = `${left}%`;
+      effects.appendChild(dmg);
+      setTimeout(()=>dmg.remove(), 900);
+    }
+
+    function sleep(ms){return new Promise(res=>setTimeout(res, ms));}
+
+    async function performAttack(){
+      if(state.busy) return;
+      if(state.hero.hp<=0) return;
+      if(state.enemy.hp<=0){
+        pushLog('敵は既に倒れている。');
+        return;
+      }
+      state.busy = true;
+      attackBtn.disabled = true;
+      pushLog('勇者の攻撃！');
+
+      heroEl.classList.add('forward');
+      await sleep(160);
+
+      const sword = equipment.swords.find(s=>s.id===state.sword);
+      for(let i=0;i<sword.hits.length;i++){
+        spawnSlash();
+        const dmg = sword.hits[i];
+        applyEnemyDamage(dmg);
+        if(i===0){
+          pushLog(`斬撃！ ${dmg}ダメージ`);
+        } else {
+          pushLog(`${sword.name}：追撃！`);
+          pushLog(`追撃！ ${dmg}ダメージ`);
+        }
+        await sleep(180);
+      }
+
+      const shield = equipment.shields.find(s=>s.id===state.shield);
+      if(shield.effect && shield.effect.type==='lightning' && state.enemy.hp>0){
+        pushLog('ディバインシールド：雷撃！');
+        spawnLightning();
+        await sleep(120);
+        applyEnemyDamage(shield.effect.damage);
+        pushLog(`雷撃！ ${shield.effect.damage}ダメージ`);
+        await sleep(240);
+      }
+
+      heroEl.classList.remove('forward');
+      await sleep(180);
+
+      checkEnemyDown();
+      state.busy = false;
+      attackBtn.disabled = false;
+    }
+
+    function applyEnemyDamage(amount){
+      const dmg = Math.max(0, Math.floor(amount));
+      state.enemy.hp = Math.max(0, state.enemy.hp - dmg);
+      spawnDamage(dmg);
+      updateHud();
+    }
+
+    function checkEnemyDown(){
+      if(state.enemy.hp<=0){
+        pushLog(`${state.enemy.name}を撃破！`);
+        setTimeout(()=>{
+          state.enemy = {...enemyBase};
+          updateHud();
+          pushLog('新たな敵が現れた。');
+        }, 600);
+      }
+    }
+
+    attackBtn.addEventListener('click', performAttack);
+
+    updateAbilityBox();
+    updateHud();
+    pushLog('戦闘開始！ 装備を切り替えて攻撃してみよう。');
+  </script>
+</body>
+</html>
