@@ -172,7 +172,7 @@
       shield: [
         { id:"wood", name:"ウッドシールド", ability:null },
         { id:"buckler", name:"バックラー", ability:null },
-        { id:"spike", name:"スパイクシールド (33%スパイク)", ability:"spike" },
+        { id:"spike", name:"スパイクシールド", ability:"spike" },
       ],
     };
 
@@ -419,7 +419,7 @@
       const tip = sword?.ability === "double"
         ? "ライトニングソード: 2回連続攻撃"
         : "勇者が左、敵が右。攻撃ボタンで剣を振ります。";
-      const extra = shield?.ability === "spike" ? " / スパイクシールド: 33%で追撃" : "";
+      const extra = shield?.ability === "spike" ? " / スパイクボルト: 33%でスパイクが飛来" : "";
       ctx.fillText(tip + extra, 26, 32);
     }
 
@@ -455,7 +455,7 @@
       if(sword?.ability === "double"){
         box.textContent = "能力: ライトニングソード - 前進し、その場で高速2連撃";
       }else if(shield?.ability === "spike"){
-        box.textContent = "能力: スパイクシールド - 攻撃後33%でスパイク追撃";
+        box.textContent = "能力: スパイクシールド - スパイクボルト (33%で飛来ダメージ)";
       }else{
         box.textContent = "能力: なし";
       }
