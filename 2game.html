@@ -278,8 +278,8 @@
       if(state.spike.active){
         state.spike.t += dt;
         if(!state.spike.hit && state.spike.t >= spikeDur){
-          const dmg = calcDamage(heroStats, foeStats) - 2;
-          addDamageNumber(Math.max(1, dmg), state.foeX, state.foeY - 80);
+          const dmg = Math.max(8, Math.round(calcDamage(heroStats, foeStats) * 2.1));
+          addDamageNumber(dmg, state.spike.endX, state.spike.endY - 30);
           state.spike.hit = true;
         }
         if(state.spike.t >= spikeDur + 120){
@@ -428,7 +428,7 @@
         ? "ライトニングソード: 2回連続攻撃"
         : "勇者が左、敵が右。攻撃ボタンで剣を振ります。";
       const extras = [];
-      if(hasSpikeBolt()) extras.push("スパイクシールド: 33%でスパイク飛来ダメージ");
+      if(hasSpikeBolt()) extras.push("スパイクシールド: 33%で敵そばにスパイク落下(大)");
       ctx.fillText([tip, ...extras].join(" / "), 26, 32);
     }
 
@@ -486,13 +486,13 @@
       updateStatLine();
     }
 
-    function trySpike(){
+   function trySpike(){
       if(!hasSpikeBolt()) return;
       if(Math.random() < 0.33){
-        const startX = state.heroX + 18;
-        const startY = state.heroY - heroImg.height * heroScale + 24;
         const endX = state.foeX - 18;
         const endY = state.foeY - foeImg.height * foeScale + 18;
+        const startX = endX - 32;
+        const startY = endY - 24;
         state.spike = { active:true, t:0, startX, startY, endX, endY, hit:false };
       }
     }
