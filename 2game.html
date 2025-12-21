@@ -451,16 +451,15 @@
 
     function updateAbilityBox(){
       const sword = equipment.sword.find(s => s.id === equipState.sword);
-      const shield = equipment.shield.find(s => s.id === equipState.shield);
       const box = document.getElementById('abilityBox');
       const lines = [];
       if(sword?.ability === "double"){
         lines.push("ライトニングソード - 前進し、その場で高速2連撃");
       }
-      if(hasSpikeBolt()){
-        const source = sword?.ability === "spikebolt" ? "ソード" : shield?.ability === "spikebolt" ? "シールド" : "";
-        lines.push(`スパイクボルト (${source}) - 剣攻撃後に33%で飛来ダメージ`);
-      }
+      const spikeSource = getSpikeBoltSource();
+      if(spikeSource){
+        const label = spikeSource === "sword" ? "ソード" : "シールド";
+        lines.push(`スパイクボルト (${label}) - 剣攻撃後に33%で飛来ダメージ`);
       box.textContent = lines.length ? `能力: ${lines.join(" / ")}` : "能力: なし";
     }
 
@@ -486,10 +485,16 @@
       }
     }
 
-    function hasSpikeBolt(){
+    function getSpikeBoltSource(){
       const sword = equipment.sword.find(s => s.id === equipState.sword);
+      if(sword?.ability === "spikebolt") return "sword";
       const shield = equipment.shield.find(s => s.id === equipState.shield);
-      return sword?.ability === "spikebolt" || shield?.ability === "spikebolt";
+      if(shield?.ability === "spikebolt") return "shield";
+      return "";
+    }
+
+    function hasSpikeBolt(){
+      return Boolean(getSpikeBoltSource());
     }
 
     function updateStatLine(){
