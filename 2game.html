@@ -166,14 +166,13 @@
       swingsDone: 0,
       nextSwingAt: swingInterval * 0.4,
       lastSword: "",
-      spike: { active:false, t:0, x:0, y:0, hit:false }
+    spike: { active:false, t:0, startX:0, startY:0, endX:0, endY:0, hit:false }
     };
 
     const equipment = {
       sword: [
         { id:"basic", name:"ブロンズソード", ability:null },
         { id:"lightning", name:"ライトニングソード (二回攻撃)", ability:"double" },
-        { id:"spikebolt", name:"スパイクボルトソード (追撃)", ability:"spikebolt" },
       ],
       armor: [
         { id:"cloth", name:"クロスアーマー", ability:null },
@@ -395,15 +394,12 @@
     function drawSpike(){
       if(!state.spike.active) return;
       const p = Math.min(1, state.spike.t / spikeDur);
-      const startX = state.baseHeroX + 30;
-      const startY = state.heroY - heroImg.height * heroScale + 30;
-      const endX = state.foeX - 20;
-      const endY = state.foeY - foeImg.height * foeScale + 20;
-      const x = startX + (endX - startX) * p;
-      const y = startY + (endY - startY) * p - Math.sin(Math.PI * p) * 12;
+      const x = state.spike.startX + (state.spike.endX - state.spike.startX) * p;
+      const y = state.spike.startY + (state.spike.endY - state.spike.startY) * p - Math.sin(Math.PI * p) * 12;
+      const angle = Math.atan2(state.spike.endY - state.spike.startY, state.spike.endX - state.spike.startX);
       ctx.save();
       ctx.translate(x, y);
-      ctx.rotate(-0.25);
+      ctx.rotate(angle);
       ctx.fillStyle = 'rgba(242,193,78,.9)';
       ctx.strokeStyle = 'rgba(0,0,0,.65)';
       ctx.lineWidth = 2;
@@ -432,7 +428,7 @@
         ? "ライトニングソード: 2回連続攻撃"
         : "勇者が左、敵が右。攻撃ボタンで剣を振ります。";
       const extras = [];
-      if(hasSpikeBolt()) extras.push("スパイクボルト: 33%で飛来ダメージ");
+      if(hasSpikeBolt()) extras.push("スパイクシールド: 33%でスパイク飛来ダメージ");
       ctx.fillText([tip, ...extras].join(" / "), 26, 32);
     }
 
@@ -461,7 +457,7 @@
       });
     }
 
-    function updateAbilityBox(){
+   function updateAbilityBox(){
       const sword = equipment.sword.find(s => s.id === equipState.sword);
       const box = document.getElementById('abilityBox');
       const lines = [];
@@ -470,10 +466,9 @@
       }
       const spikeSource = getSpikeBoltSource();
       if(spikeSource){
-        const label = spikeSource === "sword" ? "ソード" : "シールド";
-        lines.push(`スパイクボルト (${label}) - 剣攻撃後に33%で飛来ダメージ`);
+        lines.push("スパイクシールド - 剣攻撃後に33%でスパイクが飛ぶ");
       }
-      box.textContent = lines.length ? `能力: ${lines.join(" / ")}` : "能力: なし";
+      box.textContent = lines.length ? `能力:\n${lines.join("\n")}` : "能力: なし";
     }
 
     function setupEquipUI(){
@@ -494,7 +489,11 @@
     function trySpike(){
       if(!hasSpikeBolt()) return;
       if(Math.random() < 0.33){
-        state.spike = { active:true, t:0, x:0, y:0, hit:false };
+        const startX = state.heroX + 18;
+        const startY = state.heroY - heroImg.height * heroScale + 24;
+        const endX = state.foeX - 18;
+        const endY = state.foeY - foeImg.height * foeScale + 18;
+        state.spike = { active:true, t:0, startX, startY, endX, endY, hit:false };
       }
     }
 
