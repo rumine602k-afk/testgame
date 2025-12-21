@@ -79,6 +79,14 @@
       color:#d6f5e5;
       font-size:13px;
     }
+    .statsRow{
+      margin-top:8px;
+      color:var(--muted);
+      font-size:13px;
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+    }
   </style>
 </head>
 <body>
@@ -111,6 +119,7 @@
       </div>
     </div>
     <div class="abilityBox" id="abilityBox">能力: なし</div>
+    <div class="statsRow" id="statLine">勇者: HP 0 / ATK 0 / DEF 0　|　敵: HP 0 / ATK 0 / DEF 0</div>
   </div>
 
   <script>
@@ -124,7 +133,10 @@
     const groundY = 250;
     const heroScale = 0.45;
     const foeScale = 0.55;
-    const attackDur = 1100;
+    const approachDur = 320;
+    const retreatDur = 420;
+    const swingInterval = 180;
+    const swingHoldExtra = 200;
 
     const state = {
       baseHeroX: 140,
@@ -132,13 +144,15 @@
       heroY: groundY - 2,
       foeX: 620,
       foeY: groundY - 4,
-      attackTimer: 0,
-      attackActive: false,
+      attackStage: "idle",
+      stageTimer: 0,
       flashTimer: 0,
       slashTimer: 0,
       swingPlayed: false,
-      remainingAttacks: 0,
-      lastSword: "",
+      attackCount: 0,
+      swingsDone: 0,
+      nextSwingAt: swingInterval * 0.4,
+      lastSword: ""
     };
 
     const equipment = {
@@ -162,6 +176,11 @@
       shield: equipment.shield[0].id,
     };
 
+    const heroStats = { name:"勇者", hp:120, atk:18, def:6 };
+    const foeStats = { name:"ガーゴイル", hp:160, atk:12, def:4 };
+
+    const damageNumbers = [];
+
     const waitImages = Promise.all([
       new Promise(res => heroImg.onload = res),
       new Promise(res => foeImg.onload = res),
@@ -171,22 +190,21 @@
     function easeInOutCubic(t){ return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
 
     function triggerAttack(){
+      if(state.attackStage !== "idle") return;
       const sword = equipment.sword.find(s => s.id === equipState.sword);
       const attackCount = sword?.ability === "double" ? 2 : 1;
-      if(state.attackActive){
-        state.remainingAttacks = Math.max(state.remainingAttacks, attackCount);
-        return;
-      }
       startAttack(attackCount);
     }
 
     function startAttack(count){
-      state.attackActive = true;
-      state.attackTimer = 0;
+      state.attackStage = "approach";
+      state.stageTimer = 0;
       state.flashTimer = 0;
       state.slashTimer = 0;
       state.swingPlayed = false;
-      state.remainingAttacks = Math.max(0, count - 1);
+      state.attackCount = count;
+      state.swingsDone = 0;
+      state.nextSwingAt = swingInterval * 0.4;
     }
 
     document.getElementById('attackBtn').addEventListener('click', triggerAttack);
@@ -201,36 +219,33 @@
     }
 
     function update(dt){
-      if(!state.attackActive) return;
-      state.attackTimer += dt;
+      if(state.attackStage === "idle") return;
+      state.stageTimer += dt;
 
-      const t = state.attackTimer;
-      // 0-360ms: step forward
-      if(t < 360){
-        const p = easeOutQuad(t / 360);
-        state.heroX = state.baseHeroX + 46 * p;
-      // 360-700ms: hold and swing
-      }else if(t < 700){
-        state.heroX = state.baseHeroX + 46 - 6 * (t - 360) / 340;
-        if(!state.swingPlayed && t > 420){
-          state.swingPlayed = true;
-          state.flashTimer = 240;
-          state.slashTimer = 280;
+      if(state.attackStage === "approach"){
+        const p = Math.min(1, state.stageTimer / approachDur);
+        state.heroX = state.baseHeroX + 46 * easeOutQuad(p);
+        if(state.stageTimer >= approachDur){
+          state.attackStage = "swing";
+          state.stageTimer = 0;
         }
-      // 700-1100ms: move back
-      }else if(t < 1100){
-        const p = easeInOutCubic((t - 700) / 400);
-        state.heroX = state.baseHeroX + (1 - p) * 40;
-      }else{
-        state.heroX = state.baseHeroX;
-        if(state.remainingAttacks > 0){
-          state.remainingAttacks -= 1;
-          state.attackTimer = 0;
-          state.flashTimer = 0;
-          state.slashTimer = 0;
-          state.swingPlayed = false;
-        }else{
-          state.attackActive = false;
+      }else if(state.attackStage === "swing"){
+        state.heroX = state.baseHeroX + 46;
+        while(state.stageTimer >= state.nextSwingAt && state.swingsDone < state.attackCount){
+          playSwing();
+          state.nextSwingAt += swingInterval;
+        }
+        const holdLimit = state.attackCount * swingInterval + swingHoldExtra;
+        if(state.stageTimer >= holdLimit && state.swingsDone >= state.attackCount){
+          state.attackStage = "retreat";
+          state.stageTimer = 0;
+        }
+      }else if(state.attackStage === "retreat"){
+        const p = Math.min(1, state.stageTimer / retreatDur);
+        state.heroX = state.baseHeroX + (1 - easeInOutCubic(p)) * 36;
+        if(state.stageTimer >= retreatDur){
+          state.heroX = state.baseHeroX;
+          state.attackStage = "idle";
         }
       }
 
@@ -240,6 +255,28 @@
       if(state.slashTimer > 0){
         state.slashTimer = Math.max(0, state.slashTimer - dt);
       }
+      for(let i = damageNumbers.length - 1; i >= 0; i--){
+        damageNumbers[i].t -= dt;
+        if(damageNumbers[i].t <= 0) damageNumbers.splice(i,1);
+      }
+    }
+
+    function playSwing(){
+      state.swingsDone += 1;
+      state.flashTimer = 220;
+      state.slashTimer = 240;
+      const dmg = calcDamage(heroStats, foeStats);
+      addDamageNumber(dmg, state.foeX, state.foeY - 70);
+    }
+
+    function calcDamage(attacker, target){
+      const roll = Math.random() * 4;
+      const raw = attacker.atk + roll - target.def * 0.6;
+      return Math.max(3, Math.round(raw));
+    }
+
+    function addDamageNumber(val, x, y){
+      damageNumbers.push({ v: val, x, y, t: 700 });
     }
 
     function drawBackground(){
@@ -326,6 +363,7 @@
       ctx.clearRect(0,0,canvas.width,canvas.height);
       drawBackground();
       drawCharacters();
+      drawDamage();
       drawSlash();
 
       // small caption
@@ -334,6 +372,20 @@
       const sword = equipment.sword.find(s => s.id === equipState.sword);
       const tip = sword?.ability === "double" ? "ライトニングソード: 2回連続攻撃" : "勇者が左、敵が右。攻撃ボタンで剣を振ります。";
       ctx.fillText(tip, 26, 32);
+    }
+
+    function drawDamage(){
+      ctx.font = 'bold 18px "Noto Sans JP", "Yu Gothic", sans-serif';
+      damageNumbers.forEach(d => {
+        const p = 1 - d.t / 700;
+        const rise = p * 20;
+        const alpha = Math.min(1, d.t / 300);
+        ctx.fillStyle = `rgba(255,217,102,${alpha})`;
+        ctx.strokeStyle = `rgba(0,0,0,${alpha})`;
+        ctx.lineWidth = 3;
+        ctx.strokeText(d.v, d.x - 12, d.y - rise);
+        ctx.fillText(d.v, d.x - 12, d.y - rise);
+      });
     }
 
     function fillSlot(selectEl, list, currentId){
@@ -351,7 +403,7 @@
       const sword = equipment.sword.find(s => s.id === equipState.sword);
       const box = document.getElementById('abilityBox');
       if(sword?.ability === "double"){
-        box.textContent = "能力: ライトニングソード - 攻撃ボタンで2回連続攻撃";
+        box.textContent = "能力: ライトニングソード - 前進し、その場で高速2連撃";
       }else{
         box.textContent = "能力: なし";
       }
@@ -369,6 +421,12 @@
       armorEl.addEventListener('change', e => { equipState.armor = e.target.value; });
       shieldEl.addEventListener('change', e => { equipState.shield = e.target.value; });
       updateAbilityBox();
+      updateStatLine();
+    }
+
+    function updateStatLine(){
+      const line = document.getElementById('statLine');
+      line.textContent = `${heroStats.name}: HP ${heroStats.hp} / ATK ${heroStats.atk} / DEF ${heroStats.def}　|　${foeStats.name}: HP ${foeStats.hp} / ATK ${foeStats.atk} / DEF ${foeStats.def}`;
     }
 
     waitImages.then(() => {
