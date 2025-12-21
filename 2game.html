@@ -293,13 +293,11 @@
       }
       if(state.light.active){
         state.light.t += dt;
-        if(!state.light.hit && state.light.t >= lightDur * 0.55){
+        if(!state.light.hit && state.light.t >= lightDur){
           const dmg = Math.max(10, Math.round(calcDamage(heroStats, foeStats) * 2.6));
           addDamageNumber(dmg, state.foeX, state.foeY - 70);
           state.light.hit = true;
           state.flashTimer = 240;
-        }
-        if(state.light.t >= lightDur + 200){
           state.light.active = false;
         }
       }
