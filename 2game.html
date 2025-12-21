@@ -416,7 +416,6 @@
       ctx.fillStyle = 'rgba(255,255,255,.6)';
       ctx.font = '13px "Noto Sans JP", "Yu Gothic", sans-serif';
       const sword = equipment.sword.find(s => s.id === equipState.sword);
-      const shield = equipment.shield.find(s => s.id === equipState.shield);
       const tip = sword?.ability === "double"
         ? "ライトニングソード: 2回連続攻撃"
         : "勇者が左、敵が右。攻撃ボタンで剣を振ります。";
@@ -424,6 +423,7 @@
       if(hasSpikeBolt()) extras.push("スパイクボルト: 33%で飛来ダメージ");
       ctx.fillText([tip, ...extras].join(" / "), 26, 32);
     }
+
     function drawDamage(){
       ctx.font = 'bold 18px "Noto Sans JP", "Yu Gothic", sans-serif';
       damageNumbers.forEach(d => {
@@ -460,6 +460,7 @@
       if(spikeSource){
         const label = spikeSource === "sword" ? "ソード" : "シールド";
         lines.push(`スパイクボルト (${label}) - 剣攻撃後に33%で飛来ダメージ`);
+      }
       box.textContent = lines.length ? `能力: ${lines.join(" / ")}` : "能力: なし";
     }
 
