@@ -130,8 +130,17 @@
     const ctx = canvas.getContext('2d');
     const heroImg = new Image();
     const foeImg = new Image();
-    heroImg.src = 'character_oji_03_blue_brown.png';
-    foeImg.src = 'character_monster_gargoyle_purple.png';
+    function loadImage(img, src){
+      return new Promise((res, rej) => {
+        img.onload = () => res();
+        img.onerror = () => rej(new Error(`failed to load ${src}`));
+        if(img.complete && img.naturalWidth > 0){
+          res();
+          return;
+        }
+        img.src = src;
+      });
+    }
 
     const groundY = 250;
     const heroScale = 0.45;
@@ -189,9 +198,12 @@
     const damageNumbers = [];
 
     const waitImages = Promise.all([
-      new Promise(res => heroImg.onload = res),
-      new Promise(res => foeImg.onload = res),
-    ]);
+      loadImage(heroImg, 'character_oji_03_blue_brown.png'),
+      loadImage(foeImg, 'character_monster_gargoyle_purple.png'),
+    ]).catch(err => {
+      console.error(err);
+      return Promise.resolve();
+    });
 
     function easeOutQuad(t){ return 1 - (1 - t) * (1 - t); }
     function easeInOutCubic(t){ return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
