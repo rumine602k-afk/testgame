@@ -164,6 +164,7 @@
       sword: [
         { id:"basic", name:"ブロンズソード", ability:null },
         { id:"lightning", name:"ライトニングソード (二回攻撃)", ability:"double" },
+        { id:"spikebolt", name:"スパイクボルトソード (追撃)", ability:"spikebolt" },
       ],
       armor: [
         { id:"cloth", name:"クロスアーマー", ability:null },
@@ -172,7 +173,7 @@
       shield: [
         { id:"wood", name:"ウッドシールド", ability:null },
         { id:"buckler", name:"バックラー", ability:null },
-        { id:"spike", name:"スパイクシールド", ability:"spike" },
+        { id:"spike", name:"スパイクシールド", ability:"spikebolt" },
       ],
     };
 
@@ -419,8 +420,9 @@
       const tip = sword?.ability === "double"
         ? "ライトニングソード: 2回連続攻撃"
         : "勇者が左、敵が右。攻撃ボタンで剣を振ります。";
-      const extra = shield?.ability === "spike" ? " / スパイクボルト: 33%でスパイクが飛来" : "";
-      ctx.fillText(tip + extra, 26, 32);
+      const extras = [];
+      if(hasSpikeBolt()) extras.push("スパイクボルト: 33%で飛来ダメージ");
+      ctx.fillText([tip, ...extras].join(" / "), 26, 32);
     }
 
     function drawDamage(){
@@ -452,13 +454,15 @@
       const sword = equipment.sword.find(s => s.id === equipState.sword);
       const shield = equipment.shield.find(s => s.id === equipState.shield);
       const box = document.getElementById('abilityBox');
+      const lines = [];
       if(sword?.ability === "double"){
-        box.textContent = "能力: ライトニングソード - 前進し、その場で高速2連撃";
-      }else if(shield?.ability === "spike"){
-        box.textContent = "能力: スパイクシールド - スパイクボルト (33%で飛来ダメージ)";
-      }else{
-        box.textContent = "能力: なし";
+        lines.push("ライトニングソード - 前進し、その場で高速2連撃");
       }
+      if(hasSpikeBolt()){
+        const source = sword?.ability === "spikebolt" ? "ソード" : shield?.ability === "spikebolt" ? "シールド" : "";
+        lines.push(`スパイクボルト (${source}) - 剣攻撃後に33%で飛来ダメージ`);
+      }
+      box.textContent = lines.length ? `能力: ${lines.join(" / ")}` : "能力: なし";
     }
 
     function setupEquipUI(){
@@ -470,18 +474,24 @@
       fillSlot(shieldEl, equipment.shield, equipState.shield);
 
       swordEl.addEventListener('change', e => { equipState.sword = e.target.value; updateAbilityBox(); });
-      armorEl.addEventListener('change', e => { equipState.armor = e.target.value; });
-      shieldEl.addEventListener('change', e => { equipState.shield = e.target.value; });
+      armorEl.addEventListener('change', e => { equipState.armor = e.target.value; updateAbilityBox(); });
+      shieldEl.addEventListener('change', e => { equipState.shield = e.target.value; updateAbilityBox(); });
       updateAbilityBox();
       updateStatLine();
     }
 
     function trySpike(){
-      const shield = equipment.shield.find(s => s.id === equipState.shield);
+      if(!hasSpikeBolt()) return;
       if(shield?.ability !== "spike") return;
       if(Math.random() < 0.33){
         state.spike = { active:true, t:0, x:0, y:0, hit:false };
       }
+    }
+    
+    function hasSpikeBolt(){
+      const sword = equipment.sword.find(s => s.id === equipState.sword);
+      const shield = equipment.shield.find(s => s.id === equipState.shield);
+      return sword?.ability === "spikebolt" || shield?.ability === "spikebolt";
     }
 
     function updateStatLine(){
