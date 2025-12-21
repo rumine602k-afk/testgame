@@ -150,6 +150,7 @@
     const swingInterval = 180;
     const swingHoldExtra = 200;
     const spikeDur = 480;
+    const lightDur = 520;
 
     const state = {
       baseHeroX: 140,
@@ -166,7 +167,8 @@
       swingsDone: 0,
       nextSwingAt: swingInterval * 0.4,
       lastSword: "",
-    spike: { active:false, t:0, startX:0, startY:0, endX:0, endY:0, hit:false }
+      spike: { active:false, t:0, startX:0, startY:0, endX:0, endY:0, hit:false },
+      light: { active:false, t:0, hit:false }
     };
 
     const equipment = {
@@ -177,6 +179,7 @@
       armor: [
         { id:"cloth", name:"クロスアーマー", ability:null },
         { id:"iron", name:"アイアンメイル", ability:null },
+        { id:"light", name:"ライトアーマー (追加光撃)", ability:"lightstrike" },
       ],
       shield: [
         { id:"wood", name:"ウッドシールド", ability:null },
@@ -223,7 +226,8 @@
       state.attackCount = count;
       state.swingsDone = 0;
       state.nextSwingAt = swingInterval * 0.4;
-      state.spike = { active:false, t:0, x:0, y:0, hit:false };
+      state.spike = { active:false, t:0, startX:0, startY:0, endX:0, endY:0, hit:false };
+      state.light = { active:false, t:0, hit:false };
     }
 
     document.getElementById('attackBtn').addEventListener('click', triggerAttack);
@@ -266,6 +270,7 @@
           state.heroX = state.baseHeroX;
           state.attackStage = "idle";
           trySpike();
+          tryLight();
         }
       }
 
@@ -284,6 +289,18 @@
         }
         if(state.spike.t >= spikeDur + 120){
           state.spike.active = false;
+        }
+      }
+      if(state.light.active){
+        state.light.t += dt;
+        if(!state.light.hit && state.light.t >= lightDur * 0.55){
+          const dmg = Math.max(10, Math.round(calcDamage(heroStats, foeStats) * 2.6));
+          addDamageNumber(dmg, state.foeX, state.foeY - 70);
+          state.light.hit = true;
+          state.flashTimer = 240;
+        }
+        if(state.light.t >= lightDur + 200){
+          state.light.active = false;
         }
       }
       for(let i = damageNumbers.length - 1; i >= 0; i--){
@@ -417,6 +434,7 @@
       ctx.clearRect(0,0,canvas.width,canvas.height);
       drawBackground();
       drawCharacters();
+      drawLight();
       drawDamage();
       drawSlash();
 
@@ -429,6 +447,7 @@
         : "勇者が左、敵が右。攻撃ボタンで剣を振ります。";
       const extras = [];
       if(hasSpikeBolt()) extras.push("スパイクシールド: 33%で敵そばにスパイク落下(大)");
+      if(hasLightStrike()) extras.push("ライトアーマー: 攻撃後に光追加ダメージ");
       ctx.fillText([tip, ...extras].join(" / "), 26, 32);
     }
 
@@ -444,6 +463,23 @@
         ctx.strokeText(d.v, d.x - 12, d.y - rise);
         ctx.fillText(d.v, d.x - 12, d.y - rise);
       });
+    }
+    function drawLight(){
+        if(!state.light.active) return;
+        const p = Math.min(1, state.light.t / lightDur);
+        const baseX = state.foeX;
+        const baseY = state.foeY - foeImg.height * foeScale + 16;
+        const radius = 40 + p * 30;
+        const glow = ctx.createRadialGradient(baseX, baseY, 10, baseX, baseY, radius);
+        glow.addColorStop(0, `rgba(255,255,200,${0.4 + 0.35 * (1-p)})`);
+        glow.addColorStop(1, 'rgba(255,255,200,0)');
+        ctx.save();
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.fillStyle = glow;
+        ctx.beginPath();
+        ctx.arc(baseX, baseY, radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
     }
 
     function fillSlot(selectEl, list, currentId){
@@ -467,6 +503,9 @@
       const spikeSource = getSpikeBoltSource();
       if(spikeSource){
         lines.push("スパイクシールド - 剣攻撃後に33%でスパイクが飛ぶ");
+      }
+     if(hasLightStrike()){
+        lines.push("ライトアーマー - 剣攻撃終了後に光の大ダメージ追加");
       }
       box.textContent = lines.length ? `能力:\n${lines.join("\n")}` : "能力: なし";
     }
@@ -497,6 +536,10 @@
         state.spike = { active:true, t:0, startX, startY, endX, endY, hit:false };
       }
     }
+    function tryLight(){
+      if(!hasLightStrike()) return;
+      state.light = { active:true, t:0, hit:false };
+    }
 
     function getSpikeBoltSource(){
       const sword = equipment.sword.find(s => s.id === equipState.sword);
@@ -508,6 +551,10 @@
 
     function hasSpikeBolt(){
       return Boolean(getSpikeBoltSource());
+    }
+    function hasLightStrike(){
+      const armor = equipment.armor.find(a => a.id === equipState.armor);
+      return armor?.ability === "lightstrike";
     }
 
     function updateStatLine(){
