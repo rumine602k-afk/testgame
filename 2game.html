@@ -87,6 +87,9 @@
       gap:10px;
       flex-wrap:wrap;
     }
+    .spike{
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,.3));
+    }
   </style>
 </head>
 <body>
@@ -137,6 +140,7 @@
     const retreatDur = 420;
     const swingInterval = 180;
     const swingHoldExtra = 200;
+    const spikeDur = 480;
 
     const state = {
       baseHeroX: 140,
@@ -152,7 +156,8 @@
       attackCount: 0,
       swingsDone: 0,
       nextSwingAt: swingInterval * 0.4,
-      lastSword: ""
+      lastSword: "",
+      spike: { active:false, t:0, x:0, y:0, hit:false }
     };
 
     const equipment = {
@@ -167,6 +172,7 @@
       shield: [
         { id:"wood", name:"ウッドシールド", ability:null },
         { id:"buckler", name:"バックラー", ability:null },
+        { id:"spike", name:"スパイクシールド (33%スパイク)", ability:"spike" },
       ],
     };
 
@@ -205,6 +211,7 @@
       state.attackCount = count;
       state.swingsDone = 0;
       state.nextSwingAt = swingInterval * 0.4;
+      state.spike = { active:false, t:0, x:0, y:0, hit:false };
     }
 
     document.getElementById('attackBtn').addEventListener('click', triggerAttack);
@@ -246,6 +253,7 @@
         if(state.stageTimer >= retreatDur){
           state.heroX = state.baseHeroX;
           state.attackStage = "idle";
+          trySpike();
         }
       }
 
@@ -254,6 +262,17 @@
       }
       if(state.slashTimer > 0){
         state.slashTimer = Math.max(0, state.slashTimer - dt);
+      }
+      if(state.spike.active){
+        state.spike.t += dt;
+        if(!state.spike.hit && state.spike.t >= spikeDur){
+          const dmg = calcDamage(heroStats, foeStats) - 2;
+          addDamageNumber(Math.max(1, dmg), state.foeX, state.foeY - 80);
+          state.spike.hit = true;
+        }
+        if(state.spike.t >= spikeDur + 120){
+          state.spike.active = false;
+        }
       }
       for(let i = damageNumbers.length - 1; i >= 0; i--){
         damageNumbers[i].t -= dt;
@@ -301,6 +320,7 @@
       const heroH = heroImg.height * heroScale;
       const heroW = heroImg.width * heroScale;
       ctx.drawImage(heroImg, state.heroX - heroW / 2, state.heroY - heroH, heroW, heroH);
+      drawSpike();
 
       const flash = state.flashTimer > 0 ? Math.max(0.35, state.flashTimer / 260) : 0;
       const foeH = foeImg.height * foeScale;
@@ -359,6 +379,31 @@
       ctx.restore();
     }
 
+    function drawSpike(){
+      if(!state.spike.active) return;
+      const p = Math.min(1, state.spike.t / spikeDur);
+      const startX = state.baseHeroX + 30;
+      const startY = state.heroY - heroImg.height * heroScale + 30;
+      const endX = state.foeX - 20;
+      const endY = state.foeY - foeImg.height * foeScale + 20;
+      const x = startX + (endX - startX) * p;
+      const y = startY + (endY - startY) * p - Math.sin(Math.PI * p) * 12;
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(-0.25);
+      ctx.fillStyle = 'rgba(242,193,78,.9)';
+      ctx.strokeStyle = 'rgba(0,0,0,.65)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(-6, -4);
+      ctx.lineTo(12, 0);
+      ctx.lineTo(-6, 4);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+    }
+
     function draw(){
       ctx.clearRect(0,0,canvas.width,canvas.height);
       drawBackground();
@@ -370,8 +415,12 @@
       ctx.fillStyle = 'rgba(255,255,255,.6)';
       ctx.font = '13px "Noto Sans JP", "Yu Gothic", sans-serif';
       const sword = equipment.sword.find(s => s.id === equipState.sword);
-      const tip = sword?.ability === "double" ? "ライトニングソード: 2回連続攻撃" : "勇者が左、敵が右。攻撃ボタンで剣を振ります。";
-      ctx.fillText(tip, 26, 32);
+      const shield = equipment.shield.find(s => s.id === equipState.shield);
+      const tip = sword?.ability === "double"
+        ? "ライトニングソード: 2回連続攻撃"
+        : "勇者が左、敵が右。攻撃ボタンで剣を振ります。";
+      const extra = shield?.ability === "spike" ? " / スパイクシールド: 33%で追撃" : "";
+      ctx.fillText(tip + extra, 26, 32);
     }
 
     function drawDamage(){
@@ -401,9 +450,12 @@
 
     function updateAbilityBox(){
       const sword = equipment.sword.find(s => s.id === equipState.sword);
+      const shield = equipment.shield.find(s => s.id === equipState.shield);
       const box = document.getElementById('abilityBox');
       if(sword?.ability === "double"){
         box.textContent = "能力: ライトニングソード - 前進し、その場で高速2連撃";
+      }else if(shield?.ability === "spike"){
+        box.textContent = "能力: スパイクシールド - 攻撃後33%でスパイク追撃";
       }else{
         box.textContent = "能力: なし";
       }
@@ -422,6 +474,14 @@
       shieldEl.addEventListener('change', e => { equipState.shield = e.target.value; });
       updateAbilityBox();
       updateStatLine();
+    }
+
+    function trySpike(){
+      const shield = equipment.shield.find(s => s.id === equipState.shield);
+      if(shield?.ability !== "spike") return;
+      if(Math.random() < 0.33){
+        state.spike = { active:true, t:0, x:0, y:0, hit:false };
+      }
     }
 
     function updateStatLine(){
