@@ -332,7 +332,6 @@
       const heroH = heroImg.height * heroScale;
       const heroW = heroImg.width * heroScale;
       ctx.drawImage(heroImg, state.heroX - heroW / 2, state.heroY - heroH, heroW, heroH);
-      drawSpike();
 
       const flash = state.flashTimer > 0 ? Math.max(0.35, state.flashTimer / 260) : 0;
       const foeH = foeImg.height * foeScale;
@@ -354,6 +353,7 @@
         ctx.drawImage(foeImg, -foeW/2, -foeH, foeW, foeH);
         ctx.restore();
       }
+      drawSpike();
     }
 
     function drawSlash(){
@@ -486,13 +486,14 @@
       updateStatLine();
     }
 
-   function trySpike(){
+
+    function trySpike(){
       if(!hasSpikeBolt()) return;
       if(Math.random() < 0.33){
-        const endX = state.foeX - 18;
+        const endX = state.foeX - 18 + (Math.random() * 12 - 6);
         const endY = state.foeY - foeImg.height * foeScale + 18;
-        const startX = endX - 32;
-        const startY = endY - 24;
+        const startX = endX + (Math.random() * 10 - 5);
+        const startY = endY - 52;
         state.spike = { active:true, t:0, startX, startY, endX, endY, hit:false };
       }
     }
